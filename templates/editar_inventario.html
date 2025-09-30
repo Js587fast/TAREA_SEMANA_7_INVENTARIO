@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Inventario</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Inventario</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" class="needs-validation" novalidate>
+
+                            <!-- Selección de producto -->
+                            <div class="mb-3">
+                                <label for="id_producto" class="form-label fw-bold">Producto:</label>
+                                <select id="id_producto" name="id_producto" class="form-select" required>
+                                    {% for pr in productos %}
+                                        <option value="{{ pr.id_producto }}" {% if pr.id_producto == inventario.id_producto %}selected{% endif %}>
+                                            {{ pr.nombre }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Selecciona un producto válido.</div>
+                            </div>
+
+                            <!-- Selección de tienda -->
+                            <div class="mb-3">
+                                <label for="id_tienda" class="form-label fw-bold">Tienda:</label>
+                                <select id="id_tienda" name="id_tienda" class="form-select" required>
+                                    {% for t in tiendas %}
+                                        <option value="{{ t.id_tienda }}" {% if t.id_tienda == inventario.id_tienda %}selected{% endif %}>
+                                            {{ t.nombre }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Selecciona una tienda válida.</div>
+                            </div>
+
+                            <!-- Cantidad -->
+                            <div class="mb-3">
+                                <label for="cantidad" class="form-label fw-bold">Cantidad:</label>
+                                <input type="number" id="cantidad" name="cantidad" class="form-control" value="{{ inventario.cantidad }}" required min="0">
+                                <small class="form-text text-muted">Introduce el stock disponible en esta tienda.</small>
+                                <div class="invalid-feedback">Ingresa una cantidad válida (mayor o igual a 0).</div>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left-circle"></i> Cancelar
+                                </a>
+                                <!-- Botón que abre el modal -->
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                                    <i class="bi bi-save"></i> Actualizar
+                                </button>
+                            </div>
+
+                            <!-- Modal de confirmación -->
+                            <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="confirmModalLabel">Confirmar actualización</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            ¿Seguro que quieres actualizar este inventario?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary">Confirmar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Validación de Bootstrap -->
+    <script>
+    (() => {
+        'use strict';
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+    </script>
+</body>
+</html>

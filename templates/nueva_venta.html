@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Nueva Venta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white text-center">
+                        <h3>Registrar Nueva Venta</h3>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- === MENSAJES FLASH === -->
+                        {% with mensajes = get_flashed_messages(with_categories=true) %}
+                          {% if mensajes %}
+                            {% for categoria, mensaje in mensajes %}
+                              <div class="alert alert-{{ categoria }} alert-dismissible fade show" role="alert">
+                                {{ mensaje }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                              </div>
+                            {% endfor %}
+                          {% endif %}
+                        {% endwith %}
+
+                        <form method="POST">
+                            <!-- Cliente -->
+                            <div class="mb-3">
+                                <label for="id_cliente" class="form-label">Cliente:</label>
+                                <select id="id_cliente" name="id_cliente" class="form-select" required>
+                                    <option value="">--Seleccionar--</option>
+                                    {% for c in clientes %}
+                                        <option value="{{ c.id_cliente }}">{{ c.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Fecha -->
+                            <div class="mb-3">
+                                <label for="fecha" class="form-label">Fecha:</label>
+                                <input type="date" id="fecha" name="fecha" class="form-control">
+                            </div>
+
+                            <!-- Tienda -->
+                            <div class="mb-3">
+                                <label for="id_tienda" class="form-label">Tienda:</label>
+                                <select id="id_tienda" name="id_tienda" class="form-select" required>
+                                    <option value="">--Seleccionar--</option>
+                                    {% for t in tiendas %}
+                                        <option value="{{ t.id_tienda }}">{{ t.nombre }} - {{ t.ubicacion }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Detalles de productos -->
+                            <div class="mb-3">
+                                <label class="form-label">Detalles de Productos:</label>
+                                <div id="detalles" class="border p-3 rounded bg-light">
+                                    <div class="d-flex gap-2 mb-2 detalle-item">
+                                        <select name="detalles[0][id_producto]" class="form-select producto-select" required>
+                                            {% for pr in productos %}
+                                                <option value="{{ pr.id_producto }}" data-stock="{{ pr.stock }}">{{ pr.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="number" name="detalles[0][cantidad]" class="form-control" value="1" min="1" required>
+                                        <input type="number" step="0.01" name="detalles[0][precio_unitario]" class="form-control" value="0.00" required>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="agregarDetalle()" class="btn btn-secondary btn-sm mt-2">Agregar Otro Producto</button>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100">Guardar Venta</button>
+                        </form>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let contador = 1;
+        function agregarDetalle() {
+            const div = document.createElement('div');
+            div.classList.add('d-flex', 'gap-2', 'mb-2', 'detalle-item');
+            div.innerHTML = `
+                <select name="detalles[${contador}][id_producto]" class="form-select producto-select" required>
+                    {% for pr in productos %}
+                        <option value="{{ pr.id_producto }}" data-stock="{{ pr.stock }}">{{ pr.nombre }}</option>
+                    {% endfor %}
+                </select>
+                <input type="number" name="detalles[${contador}][cantidad]" class="form-control" value="1" min="1" required>
+                <input type="number" step="0.01" name="detalles[${contador}][precio_unitario]" class="form-control" value="0.00" required>
+            `;
+            document.getElementById('detalles').appendChild(div);
+            contador++;
+        }
+
+        // Validación cliente-side de stock antes de enviar
+        document.querySelector("form").addEventListener("submit", function(e){
+            let valido = true;
+            const mensajes = [];
+            document.querySelectorAll(".detalle-item").forEach(function(div){
+                const select = div.querySelector(".producto-select");
+                const option = select.options[select.selectedIndex];
+                const stock = parseInt(option.getAttribute("data-stock")) || 0;
+                const nombre = option.textContent;
+                const cantidad = parseInt(div.querySelector('input[name*="[cantidad]"]').value) || 0;
+
+                if (cantidad > stock) {
+                    valido = false;
+                    mensajes.push(`La cantidad solicitada (${cantidad}) de "${nombre}" supera el stock disponible (${stock}).`);
+                }
+            });
+
+            if (!valido) {
+                e.preventDefault();
+                alert(mensajes.join("\n"));
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+/* Fondo de pantalla */
+body {
+    background: url('../imagenes/imagen_inventario.jpg') no-repeat center center fixed;
+    background-size: cover;
+    font-family: Arial, sans-serif;
+}
+
+/* Caja de login */
+.login-box {
+    width: 350px;
+}
+
+/* Estilos del formulario */
+.login-box input {
+    height: 45px;
+    font-size: 16px;
+}
+.login-box button {
+    height: 45px;
+    font-size: 16px;
+}

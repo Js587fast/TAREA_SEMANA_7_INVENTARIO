@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Proveedor</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Proveedor</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+
+                        <!-- Nombre -->
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label fw-bold">Nombre:</label>
+                            <input type="text" id="nombre" name="nombre" class="form-control" value="{{ proveedor.nombre }}" required>
+                            <div class="invalid-feedback">El nombre del proveedor es obligatorio.</div>
+                        </div>
+
+                        <!-- Contacto -->
+                        <div class="mb-3">
+                            <label for="contacto" class="form-label fw-bold">Contacto:</label>
+                            <input type="text" id="contacto" name="contacto" class="form-control" value="{{ proveedor.contacto }}">
+                            <small class="form-text text-muted">Puedes agregar teléfono, correo u otra información de contacto.</small>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left-circle"></i> Volver al Dashboard
+                            </a>
+                            <!-- Botón que abre el modal -->
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                                <i class="bi bi-save"></i> Actualizar
+                            </button>
+                        </div>
+
+                        <!-- Modal de confirmación -->
+                        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmModalLabel">Confirmar actualización</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        ¿Seguro que quieres actualizar la información de este proveedor?
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-success">Confirmar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Validación de Bootstrap -->
+<script>
+(() => {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+</body>
+</html>
