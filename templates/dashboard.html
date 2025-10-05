@@ -1,311 +1,368 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Panel Principal - Inventario PYMES</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-</head>
-<body class="bg-light">
+{% extends "base.html" %}
+{% block title %}Panel Principal - Inventario PYMES{% endblock %}
+{% block content %}
 
-<header class="bg-primary text-white py-3 text-center shadow-sm">
-    <h1 class="mb-0">Bienvenido al Panel de Inventario 🚀</h1>
-    <a href="{{ url_for('auth.logout') }}" class="btn btn-danger btn-sm mt-2">
-        <i class="bi bi-box-arrow-right"></i> Cerrar sesión
-    </a>
-</header>
+<h1 class="mb-4">Bienvenido al Panel de Inventario 🚀</h1>
 
-<main class="container my-4">
+<!-- === MENSAJES FLASH === -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="mb-3">
+  {% for category, message in messages %}
+  <div class="alert alert-{{ 'success' if category == 'success' else category }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
 
-    <!-- === MENSAJES FLASH === -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="mb-3">
-          {% for category, message in messages %}
-            <div class="alert alert-{{ 'success' if category == 'success' else category }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
+<!-- ============ REPORTES ============ -->
+<h2 class="mt-4"><i class="bi bi-file-earmark-bar-graph"></i> Reportes</h2>
+
+<div class="d-flex flex-wrap gap-3 mb-4">
+  <!-- Inventario -->
+  <div class="card p-3 shadow-sm" style="width: 250px">
+    <h5>Inventario</h5>
+    <p class="text-muted small">Descarga en Excel o PDF</p>
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle w-100" data-bs-toggle="dropdown">Descargar</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ url_for('reportes.reporte_inventario') }}?formato=excel">Excel</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('reportes.reporte_inventario') }}?formato=pdf">PDF</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Ventas -->
+  <div class="card p-3 shadow-sm" style="width: 250px">
+    <h5>Ventas</h5>
+    <p class="text-muted small">Descarga en Excel o PDF</p>
+    <div class="dropdown">
+      <button class="btn btn-success dropdown-toggle w-100" data-bs-toggle="dropdown">Descargar</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ url_for('reportes.reporte_ventas') }}?formato=excel">Excel</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('reportes.reporte_ventas') }}?formato=pdf">PDF</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Clientes -->
+  <div class="card p-3 shadow-sm" style="width: 250px">
+    <h5>Clientes</h5>
+    <p class="text-muted small">Descarga en Excel o PDF</p>
+    <div class="dropdown">
+      <button class="btn btn-warning dropdown-toggle w-100" data-bs-toggle="dropdown">Descargar</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ url_for('reportes.reporte_clientes') }}?formato=excel">Excel</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('reportes.reporte_clientes') }}?formato=pdf">PDF</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Proveedores -->
+  <div class="card p-3 shadow-sm" style="width: 250px">
+    <h5>Proveedores</h5>
+    <p class="text-muted small">Descarga en Excel o PDF</p>
+    <div class="dropdown">
+      <button class="btn btn-danger dropdown-toggle w-100" data-bs-toggle="dropdown">Descargar</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ url_for('reportes.reporte_proveedores') }}?formato=excel">Excel</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('reportes.reporte_proveedores') }}?formato=pdf">PDF</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============ REPORTES PERSONALIZADOS ============ -->
+<div class="card p-3 shadow-sm mb-4" style="max-width: 800px;">
+  <h5 class="mb-3">📦 Reportes Personalizados</h5>
+
+  <!-- Stock Actualizado -->
+  <div class="mb-2">
+    <strong>Stock Actualizado</strong>
+    <div class="btn-group ms-2">
+      <a href="{{ url_for('reportes.reporte_inventario') }}?formato=excel" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-file-earmark-excel"></i> Excel
+      </a>
+      <a href="{{ url_for('reportes.reporte_inventario') }}?formato=pdf" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-file-earmark-pdf"></i> PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Detalle de Ventas -->
+  <div class="mb-2">
+    <strong>Detalle de Ventas</strong>
+    <form method="get" action="{{ url_for('reportes.reporte_detalle_ventas') }}" class="row g-2 align-items-center mt-2">
+      <div class="col-auto">
+        <input type="date" class="form-control form-control-sm" name="fecha_inicio" placeholder="Fecha inicio">
+      </div>
+      <div class="col-auto">
+        <input type="date" class="form-control form-control-sm" name="fecha_fin" placeholder="Fecha fin">
+      </div>
+      <div class="col-auto">
+        <select class="form-select form-select-sm" name="cliente">
+          <option value="">Todos los clientes</option>
+          {% for c in clientes %}
+          <option value="{{ c.id_cliente }}">{{ c.nombre }}</option>
           {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <select class="form-select form-select-sm" name="formato">
+          <option value="excel">Excel</option>
+          <option value="pdf">PDF</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-download"></i> Descargar</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-    <!-- SECCIÓN REPORTES -->
-    <h2 class="mt-4"><i class="bi bi-file-earmark-bar-graph"></i> Reportes</h2>
-    <div class="d-flex flex-wrap gap-3 mb-4">
-        <!-- Reportes Inventario -->
-        <div class="card p-3 shadow-sm" style="width:250px;">
-            <h5>Inventario</h5>
-            <p class="text-muted small">Descarga en Excel o PDF</p>
-            <div class="dropdown">
-                <button class="btn btn-primary dropdown-toggle w-100" data-bs-toggle="dropdown">Descargar</button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="/reporte/inventario?formato=excel">Excel</a></li>
-                    <li><a class="dropdown-item" href="/reporte/inventario?formato=pdf">PDF</a></li>
-                </ul>
-            </div>
-        </div>
-        <!-- Reportes Ventas -->
-        <div class="card p-3 shadow-sm" style="width:250px;">
-            <h5>Ventas</h5>
-            <p class="text-muted small">Descarga en Excel o PDF</p>
-            <div class="dropdown">
-                <button class="btn btn-success dropdown-toggle w-100" data-bs-toggle="dropdown">Descargar</button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="/reporte/ventas?formato=excel">Excel</a></li>
-                    <li><a class="dropdown-item" href="/reporte/ventas?formato=pdf">PDF</a></li>
-                </ul>
-            </div>
-        </div>
-        <!-- Reportes Clientes -->
-        <div class="card p-3 shadow-sm" style="width:250px;">
-            <h5>Clientes</h5>
-            <p class="text-muted small">Descarga en Excel o PDF</p>
-            <div class="dropdown">
-                <button class="btn btn-warning dropdown-toggle w-100" data-bs-toggle="dropdown">Descargar</button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="/reporte/clientes?formato=excel">Excel</a></li>
-                    <li><a class="dropdown-item" href="/reporte/clientes?formato=pdf">PDF</a></li>
-                </ul>
-            </div>
-        </div>
-        <!-- Reportes Proveedores -->
-        <div class="card p-3 shadow-sm" style="width:250px;">
-            <h5>Proveedores</h5>
-            <p class="text-muted small">Descarga en Excel o PDF</p>
-            <div class="dropdown">
-                <button class="btn btn-danger dropdown-toggle w-100" data-bs-toggle="dropdown">Descargar</button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="/reporte/proveedores?formato=excel">Excel</a></li>
-                    <li><a class="dropdown-item" href="/reporte/proveedores?formato=pdf">PDF</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
+<!-- ============ PROVEEDORES ============ -->
+<h2 class="mt-4"><i class="bi bi-truck"></i> Proveedores</h2>
+<a href="{{ url_for('proveedor.nuevo_proveedor') }}" class="btn btn-success mb-2">
+  <i class="bi bi-plus-circle"></i> Agregar Proveedor
+</a>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-primary">
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Contacto</th>
+        <th>Email</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in proveedores %}
+      <tr>
+        <td>{{ p.id_proveedor }}</td>
+        <td>{{ p.nombre }}</td>
+        <td>{{ p.contacto }}</td>
+        <td>{{ p.email }}</td>
+        <td>
+          <a href="{{ url_for('proveedor.editar_proveedor', id=p.id_proveedor) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil-square"></i> Editar
+          </a>
+          <form action="{{ url_for('proveedor.eliminar_proveedor', id=p.id_proveedor) }}" method="post" style="display:inline;">
+            <button class="btn btn-danger btn-sm" onclick="return confirm('⚠️ ¿Seguro que deseas eliminar este proveedor?')">
+              <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-    <!-- PROVEEDORES -->
-    <h2 class="mt-4"><i class="bi bi-truck"></i> Proveedores</h2>
-    <a href="{{ url_for('proveedor.nuevo_proveedor') }}" class="btn btn-success mb-2">
-        <i class="bi bi-plus-circle"></i> Agregar Proveedor
-    </a>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-primary">
-                <tr><th>ID</th><th>Nombre</th><th>Contacto</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-            {% for p in proveedores %}
-                <tr>
-                    <td>{{ p.id_proveedor }}</td>
-                    <td>{{ p.nombre }}</td>
-                    <td>{{ p.contacto }}</td>
-                    <td>
-                        <a href="{{ url_for('proveedor.editar_proveedor', id=p.id_proveedor) }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-pencil-square"></i> Editar
-                        </a>
-                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#delProv{{p.id_proveedor}}">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                        <div class="modal fade" id="delProv{{p.id_proveedor}}" tabindex="-1">
-                            <div class="modal-dialog"><div class="modal-content">
-                                <div class="modal-header"><h5 class="modal-title text-danger">Confirmar eliminación</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                                <div class="modal-body">⚠️ ¿Seguro que deseas eliminar este proveedor?</div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <form action="{{ url_for('proveedor.eliminar_proveedor', id=p.id_proveedor) }}" method="post" style="display:inline;">
-                                        <button type="submit" class="btn btn-danger">Eliminar</button>
-                                    </form>
-                                </div>
-                            </div></div>
-                        </div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<!-- ============ TIENDAS ============ -->
+<h2 class="mt-4"><i class="bi bi-shop"></i> Tiendas</h2>
+<a href="{{ url_for('tienda.nueva_tienda') }}" class="btn btn-success mb-2">
+  <i class="bi bi-plus-circle"></i> Agregar Tienda
+</a>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-primary">
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Ubicación</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tiendas %}
+      <tr>
+        <td>{{ t.id_tienda }}</td>
+        <td>{{ t.nombre }}</td>
+        <td>{{ t.ubicacion }}</td>
+        <td>
+          <a href="{{ url_for('tienda.editar_tienda', id=t.id_tienda) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil-square"></i> Editar
+          </a>
+          <form action="{{ url_for('tienda.eliminar_tienda', id=t.id_tienda) }}" method="post" style="display:inline;">
+            <button class="btn btn-danger btn-sm" onclick="return confirm('⚠️ ¿Seguro que deseas eliminar esta tienda?')">
+              <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-    <!-- PRODUCTOS -->
-    <h2 class="mt-4"><i class="bi bi-box"></i> Productos</h2>
-    <a href="{{ url_for('producto.nuevo_producto') }}" class="btn btn-success mb-2">
-        <i class="bi bi-plus-circle"></i> Agregar Producto
-    </a>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-primary">
-                <tr><th>ID</th><th>Nombre</th><th>Precio</th><th>Stock Total</th><th>Proveedor</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-            {% for pr in productos %}
-                <tr>
-                    <td>{{ pr.id_producto }}</td>
-                    <td>{{ pr.nombre }}</td>
-                    <td>${{ "{:,.0f}".format(pr.precio) }} CLP</td>
-                    <td>{{ pr_inventarios[pr.id_producto] if pr.id_producto in pr_inventarios else 0 }}</td>
-                    <td>{{ pr.id_proveedor }}</td>
-                    <td>
-                        <a href="{{ url_for('producto.editar_producto', id=pr.id_producto) }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-pencil-square"></i> Editar
-                        </a>
-                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#delProd{{pr.id_producto}}">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                        <div class="modal fade" id="delProd{{pr.id_producto}}" tabindex="-1">
-                            <div class="modal-dialog"><div class="modal-content">
-                                <div class="modal-header"><h5 class="modal-title text-danger">Confirmar eliminación</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                                <div class="modal-body">⚠️ ¿Seguro que deseas eliminar este producto?</div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <form action="{{ url_for('producto.eliminar_producto', id=pr.id_producto) }}" method="post" style="display:inline;">
-                                        <button type="submit" class="btn btn-danger">Eliminar</button>
-                                    </form>
-                                </div>
-                            </div></div>
-                        </div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<!-- ============ PRODUCTOS ============ -->
+<h2 class="mt-4"><i class="bi bi-box"></i> Productos</h2>
+<a href="{{ url_for('producto.nuevo_producto') }}" class="btn btn-success mb-2">
+  <i class="bi bi-plus-circle"></i> Agregar Producto
+</a>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-primary">
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Precio</th>
+        <th>Stock</th>
+        <th>Proveedor</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pr in productos %}
+      <tr>
+        <td>{{ pr.id_producto }}</td>
+        <td>{{ pr.nombre }}</td>
+        <td>${{ "{:,.0f}".format(pr.precio) }} CLP</td>
+        <td>{{ pr.stock }}</td>
+        <td>{{ pr.proveedor.nombre if pr.proveedor else "—" }}</td>
+        <td>
+          <a href="{{ url_for('producto.editar_producto', id=pr.id_producto) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil-square"></i> Editar
+          </a>
+          <form action="{{ url_for('producto.eliminar_producto', id=pr.id_producto) }}" method="post" style="display:inline;">
+            <button class="btn btn-danger btn-sm" onclick="return confirm('⚠️ ¿Seguro que deseas eliminar este producto?')">
+              <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-    <!-- CLIENTES -->
-    <h2 class="mt-4"><i class="bi bi-people"></i> Clientes</h2>
-    <a href="{{ url_for('cliente.nuevo_cliente') }}" class="btn btn-success mb-2">
-        <i class="bi bi-plus-circle"></i> Agregar Cliente
-    </a>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-primary">
-                <tr><th>ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-            {% for c in clientes %}
-                <tr>
-                    <td>{{ c.id_cliente }}</td>
-                    <td>{{ c.nombre }}</td>
-                    <td>{{ c.email }}</td>
-                    <td>{{ c.telefono }}</td>
-                    <td>
-                        <a href="{{ url_for('cliente.editar_cliente', id=c.id_cliente) }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-pencil-square"></i> Editar
-                        </a>
-                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#delCli{{c.id_cliente}}">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                        <div class="modal fade" id="delCli{{c.id_cliente}}" tabindex="-1">
-                            <div class="modal-dialog"><div class="modal-content">
-                                <div class="modal-header"><h5 class="modal-title text-danger">Confirmar eliminación</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                                <div class="modal-body">⚠️ ¿Seguro que deseas eliminar este cliente?</div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <form action="{{ url_for('cliente.eliminar_cliente', id=c.id_cliente) }}" method="post" style="display:inline;">
-                                        <button type="submit" class="btn btn-danger">Eliminar</button>
-                                    </form>
-                                </div>
-                            </div></div>
-                        </div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<!-- ============ CLIENTES ============ -->
+<h2 class="mt-4"><i class="bi bi-people"></i> Clientes</h2>
+<a href="{{ url_for('cliente.nuevo_cliente') }}" class="btn btn-success mb-2">
+  <i class="bi bi-plus-circle"></i> Agregar Cliente
+</a>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-primary">
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Teléfono</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in clientes %}
+      <tr>
+        <td>{{ c.id_cliente }}</td>
+        <td>{{ c.nombre }}</td>
+        <td>{{ c.email }}</td>
+        <td>{{ c.telefono }}</td>
+        <td>
+          <a href="{{ url_for('cliente.editar_cliente', id=c.id_cliente) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil-square"></i> Editar
+          </a>
+          <form action="{{ url_for('cliente.eliminar_cliente', id=c.id_cliente) }}" method="post" style="display:inline;">
+            <button class="btn btn-danger btn-sm" onclick="return confirm('⚠️ ¿Seguro que deseas eliminar este cliente?')">
+              <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-    <!-- VENTAS -->
-    <h2 class="mt-4"><i class="bi bi-cart"></i> Ventas</h2>
-    <a href="{{ url_for('venta.nueva_venta') }}" class="btn btn-success mb-2">
-        <i class="bi bi-plus-circle"></i> Agregar Venta
-    </a>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-primary">
-                <tr><th>ID</th><th>Fecha</th><th>Total</th><th>ID Cliente</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-            {% for v in ventas %}
-                <tr>
-                    <td>{{ v.id_venta }}</td>
-                    <td>{{ v.fecha }}</td>
-                    <td>${{ "{:,.0f}".format(v.total) }} CLP</td>
-                    <td>{{ v.id_cliente }}</td>
-                    <td>
-                        <a href="{{ url_for('venta.editar_venta', id_venta=v.id_venta) }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-pencil-square"></i> Editar
-                        </a>
-                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#delVenta{{v.id_venta}}">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                        <div class="modal fade" id="delVenta{{v.id_venta}}" tabindex="-1">
-                            <div class="modal-dialog"><div class="modal-content">
-                                <div class="modal-header"><h5 class="modal-title text-danger">Confirmar eliminación</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                                <div class="modal-body">⚠️ ¿Seguro que deseas eliminar esta venta?</div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <form action="{{ url_for('venta.eliminar_venta', id_venta=v.id_venta) }}" method="post" style="display:inline;">
-                                        <button type="submit" class="btn btn-danger">Eliminar</button>
-                                    </form>
-                                </div>
-                            </div></div>
-                        </div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<!-- ============ VENTAS ============ -->
+<h2 class="mt-4"><i class="bi bi-cart"></i> Ventas</h2>
+<a href="{{ url_for('venta.nueva_venta') }}" class="btn btn-success mb-2">
+  <i class="bi bi-plus-circle"></i> Agregar Venta
+</a>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-primary">
+      <tr>
+        <th>ID</th>
+        <th>Fecha</th>
+        <th>Total</th>
+        <th>Cliente</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in ventas %}
+      <tr>
+        <td>{{ v.id_venta }}</td>
+        <td>{{ v.fecha }}</td>
+        <td>${{ "{:,.0f}".format(v.total) }} CLP</td>
+        <td>{{ v.cliente.nombre if v.cliente else "—" }}</td>
+        <td>
+          <a href="{{ url_for('venta.editar_venta', id_venta=v.id_venta) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil-square"></i> Editar
+          </a>
+          <form action="{{ url_for('venta.eliminar_venta', id_venta=v.id_venta) }}" method="post" style="display:inline;">
+            <button class="btn btn-danger btn-sm" onclick="return confirm('⚠️ ¿Seguro que deseas eliminar esta venta?')">
+              <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-    <!-- DETALLE VENTAS -->
-    <h2 class="mt-4"><i class="bi bi-list-check"></i> Detalle de Ventas</h2>
-    <a href="{{ url_for('detalle.nuevo_detalle') }}" class="btn btn-success mb-2">
-        <i class="bi bi-plus-circle"></i> Agregar Detalle
-    </a>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-primary">
-                <tr><th>ID</th><th>Venta</th><th>Producto</th><th>Cantidad</th><th>Subtotal</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-            {% for d in detalleventas %}
-                <tr>
-                    <td>{{ d.id_detalle }}</td>
-                    <td>{{ d.id_venta }}</td>
-                    <td>{{ d.id_producto }}</td>
-                    <td>{{ d.cantidad }}</td>
-                    <td>${{ "{:,.0f}".format(d.subtotal) }} CLP</td>
-                    <td>
-                        <a href="{{ url_for('detalle.editar_detalle', id_detalle=d.id_detalle) }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-pencil-square"></i> Editar
-                        </a>
-                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#delDet{{d.id_detalle}}">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                        <div class="modal fade" id="delDet{{d.id_detalle}}" tabindex="-1">
-                            <div class="modal-dialog"><div class="modal-content">
-                                <div class="modal-header"><h5 class="modal-title text-danger">Confirmar eliminación</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                                <div class="modal-body">⚠️ ¿Seguro que deseas eliminar este detalle de venta?</div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <form action="{{ url_for('detalle.eliminar_detalle', id_detalle=d.id_detalle) }}" method="post" style="display:inline;">
-                                        <button type="submit" class="btn btn-danger">Eliminar</button>
-                                    </form>
-                                </div>
-                            </div></div>
-                        </div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<!-- ============ DETALLE DE VENTAS ============ -->
+<h2 class="mt-4"><i class="bi bi-list-check"></i> Detalle de Ventas</h2>
+<a href="{{ url_for('detalle.nuevo_detalle') }}" class="btn btn-success mb-2">
+  <i class="bi bi-plus-circle"></i> Agregar Detalle
+</a>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle text-center">
+    <thead class="table-primary">
+      <tr>
+        <th>ID</th>
+        <th>Venta</th>
+        <th>Cliente</th>
+        <th>Tienda</th>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th>Precio Unitario</th>
+        <th>Subtotal</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in detalleventas %}
+      <tr>
+        <td>{{ d.id_detalle }}</td>
+        <td>{{ d.venta.id_venta }}</td>
+        <td>{{ d.venta.cliente.nombre if d.venta and d.venta.cliente else "—" }}</td>
+        <td>{{ d.venta.tienda.nombre if d.venta and d.venta.tienda else "—" }}</td>
+        <td>{{ d.producto.nombre }}</td>
+        <td>{{ d.cantidad }}</td>
+        <td>${{ "{:,.0f}".format(d.subtotal / d.cantidad) if d.cantidad else 0 }} CLP</td>
+        <td>${{ "{:,.0f}".format(d.subtotal) }} CLP</td>
+        <td>
+          <a href="{{ url_for('detalle.editar_detalle', id_detalle=d.id_detalle) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil-square"></i> Editar
+          </a>
+          <form action="{{ url_for('detalle.eliminar_detalle', id_detalle=d.id_detalle) }}" method="post" style="display:inline;">
+            <button class="btn btn-danger btn-sm" onclick="return confirm('⚠️ ¿Seguro que deseas eliminar este detalle?')">
+              <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-</main>
-</body>
-</html>
+{% endblock %}

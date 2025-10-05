@@ -1,5 +1,6 @@
 from flask import Flask, redirect, url_for, session, render_template
-from models import db, Proveedor, Producto, Cliente, Tienda, Inventario, Venta, DetalleVenta
+from extensions import db
+from models import Proveedor, Producto, Cliente, Tienda, Inventario, Venta, DetalleVenta, Usuario
 
 # Importar Blueprints
 from routes.auth import auth_bp
@@ -17,6 +18,7 @@ app.secret_key = "supersecretkey123"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/inventario_pymes'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Inicializar DB
 db.init_app(app)
 
 # Registrar Blueprints
@@ -40,22 +42,31 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 @app.route("/")
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    # --- Se calcula el stock total de cada producto ---
+    pr_inventarios = {}
+    inventarios = Inventario.query.all()
+    for inv in inventarios:
+        pr_inventarios[inv.id_producto] = pr_inventarios.get(inv.id_producto, 0) + inv.cantidad
+
     return render_template(
         "dashboard.html",
         proveedores=Proveedor.query.all(),
         productos=Producto.query.all(),
         clientes=Cliente.query.all(),
         tiendas=Tienda.query.all(),
-        inventarios=Inventario.query.all(),
+        inventarios=inventarios,
         ventas=Venta.query.all(),
-        detalleventas=DetalleVenta.query.all()
+        detalleventas=DetalleVenta.query.all(),
+        pr_inventarios=pr_inventarios
     )
+
 
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all()  # Crea tablas si no existen
+        db.create_all()  # Cumple la funcion de crear tablas si no existen
     app.run(debug=True)

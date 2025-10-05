@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-success text-white text-center">
+      <h4>📦 Reporte de Stock Actualizado</h4>
+    </div>
+    <div class="card-body">
+
+      <div class="d-flex justify-content-end mb-3">
+        <!-- Botones para exportar -->
+        <div class="btn-group">
+          <a href="#" class="btn btn-outline-primary btn-sm disabled">
+            <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+          </a>
+          <a href="#" class="btn btn-outline-danger btn-sm disabled">
+            <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
+          </a>
+        </div>
+      </div>
+
+      <table class="table table-bordered table-hover">
+        <thead class="table-success">
+          <tr>
+            <th>#</th>
+            <th>Producto</th>
+            <th>Tienda</th>
+            <th>Cantidad Disponible</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if inventarios %}
+            {% for inv in inventarios %}
+            <tr>
+              <td>{{ inv.id_inventario }}</td>
+              <td>{{ inv.producto.nombre if inv.producto else '-' }}</td>
+              <td>{{ inv.tienda.nombre if inv.tienda else '-' }}</td>
+              <td>{{ inv.cantidad }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">No hay inventario registrado.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

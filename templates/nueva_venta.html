@@ -1,132 +1,121 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar Nueva Venta</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white text-center">
-                        <h3>Registrar Nueva Venta</h3>
-                    </div>
-                    <div class="card-body">
-
-                        <!-- === MENSAJES FLASH === -->
-                        {% with mensajes = get_flashed_messages(with_categories=true) %}
-                          {% if mensajes %}
-                            {% for categoria, mensaje in mensajes %}
-                              <div class="alert alert-{{ categoria }} alert-dismissible fade show" role="alert">
-                                {{ mensaje }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-                              </div>
-                            {% endfor %}
-                          {% endif %}
-                        {% endwith %}
-
-                        <form method="POST">
-                            <!-- Cliente -->
-                            <div class="mb-3">
-                                <label for="id_cliente" class="form-label">Cliente:</label>
-                                <select id="id_cliente" name="id_cliente" class="form-select" required>
-                                    <option value="">--Seleccionar--</option>
-                                    {% for c in clientes %}
-                                        <option value="{{ c.id_cliente }}">{{ c.nombre }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <!-- Fecha -->
-                            <div class="mb-3">
-                                <label for="fecha" class="form-label">Fecha:</label>
-                                <input type="date" id="fecha" name="fecha" class="form-control">
-                            </div>
-
-                            <!-- Tienda -->
-                            <div class="mb-3">
-                                <label for="id_tienda" class="form-label">Tienda:</label>
-                                <select id="id_tienda" name="id_tienda" class="form-select" required>
-                                    <option value="">--Seleccionar--</option>
-                                    {% for t in tiendas %}
-                                        <option value="{{ t.id_tienda }}">{{ t.nombre }} - {{ t.ubicacion }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <!-- Detalles de productos -->
-                            <div class="mb-3">
-                                <label class="form-label">Detalles de Productos:</label>
-                                <div id="detalles" class="border p-3 rounded bg-light">
-                                    <div class="d-flex gap-2 mb-2 detalle-item">
-                                        <select name="detalles[0][id_producto]" class="form-select producto-select" required>
-                                            {% for pr in productos %}
-                                                <option value="{{ pr.id_producto }}" data-stock="{{ pr.stock }}">{{ pr.nombre }}</option>
-                                            {% endfor %}
-                                        </select>
-                                        <input type="number" name="detalles[0][cantidad]" class="form-control" value="1" min="1" required>
-                                        <input type="number" step="0.01" name="detalles[0][precio_unitario]" class="form-control" value="0.00" required>
-                                    </div>
-                                </div>
-                                <button type="button" onclick="agregarDetalle()" class="btn btn-secondary btn-sm mt-2">Agregar Otro Producto</button>
-                            </div>
-
-                            <button type="submit" class="btn btn-success w-100">Guardar Venta</button>
-                        </form>
-                    </div>
-                    <div class="card-footer text-center">
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white text-center">
+      <h4>Registrar Nueva Venta</h4>
     </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('venta.nueva_venta') }}">
+        <!-- CLIENTE -->
+        <div class="mb-3">
+          <label for="id_cliente" class="form-label">Cliente:</label>
+          <select name="id_cliente" id="id_cliente" class="form-select" required>
+            <option value="">--Seleccionar--</option>
+            {% for c in clientes %}
+            <option value="{{ c.id_cliente }}">{{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-    <script>
-        let contador = 1;
-        function agregarDetalle() {
-            const div = document.createElement('div');
-            div.classList.add('d-flex', 'gap-2', 'mb-2', 'detalle-item');
-            div.innerHTML = `
-                <select name="detalles[${contador}][id_producto]" class="form-select producto-select" required>
-                    {% for pr in productos %}
-                        <option value="{{ pr.id_producto }}" data-stock="{{ pr.stock }}">{{ pr.nombre }}</option>
-                    {% endfor %}
-                </select>
-                <input type="number" name="detalles[${contador}][cantidad]" class="form-control" value="1" min="1" required>
-                <input type="number" step="0.01" name="detalles[${contador}][precio_unitario]" class="form-control" value="0.00" required>
-            `;
-            document.getElementById('detalles').appendChild(div);
-            contador++;
-        }
+        <!-- FECHA -->
+        <div class="mb-3">
+          <label for="fecha" class="form-label">Fecha:</label>
+          <input type="date" name="fecha" id="fecha" class="form-control">
+        </div>
 
-        // Validación cliente-side de stock antes de enviar
-        document.querySelector("form").addEventListener("submit", function(e){
-            let valido = true;
-            const mensajes = [];
-            document.querySelectorAll(".detalle-item").forEach(function(div){
-                const select = div.querySelector(".producto-select");
-                const option = select.options[select.selectedIndex];
-                const stock = parseInt(option.getAttribute("data-stock")) || 0;
-                const nombre = option.textContent;
-                const cantidad = parseInt(div.querySelector('input[name*="[cantidad]"]').value) || 0;
+        <!-- TIENDA -->
+        <div class="mb-3">
+          <label for="id_tienda" class="form-label">Tienda:</label>
+          <select name="id_tienda" id="id_tienda" class="form-select" required>
+            <option value="">--Seleccionar--</option>
+            {% for t in tiendas %}
+            <option value="{{ t.id_tienda }}">{{ t.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-                if (cantidad > stock) {
-                    valido = false;
-                    mensajes.push(`La cantidad solicitada (${cantidad}) de "${nombre}" supera el stock disponible (${stock}).`);
-                }
-            });
+        <!-- DETALLES DE PRODUCTOS -->
+        <h5 class="text-secondary mb-3">Detalles de Productos</h5>
+        <div id="productos-container">
+          <div class="row mb-2 detalle-producto">
+            <div class="col-md-5">
+              <select name="detalles[0][id_producto]" class="form-select producto-select" required>
+                <option value="">--Selecciona un producto--</option>
+                {% for p in productos %}
+                <option value="{{ p.id_producto }}"
+                        data-precio="{{ p.precio }}"
+                        data-stock="{{ p.stock }}">
+                  {{ p.nombre }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <input type="number" min="1" name="detalles[0][cantidad]" class="form-control cantidad-input" placeholder="Cant." required>
+            </div>
+            <div class="col-md-3">
+              <input type="number" step="0.01" min="0" name="detalles[0][precio_unitario]" class="form-control precio-input" placeholder="Precio" required>
+            </div>
+            <div class="col-md-2">
+              <input type="text" class="form-control stock-display" placeholder="Stock: -" disabled>
+            </div>
+          </div>
+        </div>
 
-            if (!valido) {
-                e.preventDefault();
-                alert(mensajes.join("\n"));
-            }
-        });
-    </script>
+        <div class="mb-3">
+          <button type="button" class="btn btn-secondary" id="add-producto">Agregar Otro Producto</button>
+        </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+        <div class="d-flex justify-content-between">
+          <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-success">Guardar Venta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Función para enlazar comportamiento a selects de producto
+  function attachListeners(row) {
+    const select = row.querySelector('.producto-select');
+    const precioInput = row.querySelector('.precio-input');
+    const stockDisplay = row.querySelector('.stock-display');
+    select.addEventListener('change', function() {
+      const selected = this.options[this.selectedIndex];
+      const precio = selected.getAttribute('data-precio');
+      const stock = selected.getAttribute('data-stock');
+      if (precio) precioInput.value = precio;
+      if (stock) stockDisplay.value = "Stock: " + stock;
+    });
+  }
+
+  // Atachar al primer row
+  document.querySelectorAll('.detalle-producto').forEach(attachListeners);
+
+  // Botón que sirve para agregar otro producto
+  document.getElementById('add-producto').addEventListener('click', function() {
+    const container = document.getElementById('productos-container');
+    const index = container.querySelectorAll('.detalle-producto').length;
+    const newRow = container.firstElementChild.cloneNode(true);
+
+    // limpiar valores
+    newRow.querySelectorAll('input').forEach(input => input.value = '');
+    newRow.querySelector('select').selectedIndex = 0;
+
+    // Se debe actualizar nombres de inputs para que no se repitan índices
+    newRow.querySelectorAll('select, input').forEach(el => {
+      if (el.name.includes('detalles')) {
+        el.name = el.name.replace(/\d+/, index);
+      }
+    });
+
+    container.appendChild(newRow);
+    attachListeners(newRow);
+  });
+});
+</script>
+{% endblock %}
