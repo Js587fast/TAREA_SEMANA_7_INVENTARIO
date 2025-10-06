@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for, session, render_template
+from datetime import timedelta
 from extensions import db
 from models import Proveedor, Producto, Cliente, Tienda, Inventario, Venta, DetalleVenta, Usuario
 
@@ -17,6 +18,14 @@ app = Flask(__name__)
 app.secret_key = "supersecretkey123"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/inventario_pymes'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Tiempo máximo de inactividad antes de cerrar sesión
+app.permanent_session_lifetime = timedelta(minutes=5)
+
+@app.before_request
+def make_session_permanent():
+    # Cada request renueva el tiempo de sesión
+    session.permanent = True
 
 # Inicializar DB
 db.init_app(app)
@@ -68,5 +77,5 @@ def dashboard():
 
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all()  # Cumple la funcion de crear tablas si no existen
+        db.create_all()  # Crea tablas si no existen
     app.run(debug=True)

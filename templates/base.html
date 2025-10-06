@@ -110,5 +110,32 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ⏱ Auto-logout por inactividad -->
+<script>
+    let idleTime = 0;
+
+    // Cada minuto aumenta el contador
+    setInterval(timerIncrement, 60000); // 1 min
+
+    // Eventos que reinician el contador
+    window.onload = resetTimer;
+    document.onmousemove = resetTimer;
+    document.onkeypress = resetTimer;
+    document.onscroll = resetTimer;
+    document.onclick = resetTimer;
+
+    function timerIncrement() {
+        idleTime++;
+        if (idleTime > 4) { // 5 min inactivo
+            window.location.href = "{{ url_for('auth.logout') }}";
+        }
+    }
+
+    function resetTimer() {
+        idleTime = 0;
+    }
+</script>
+
 </body>
 </html>

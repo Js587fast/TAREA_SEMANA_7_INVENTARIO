@@ -9,15 +9,17 @@ auth_bp = Blueprint('auth', __name__)
 def login():
     """Pantalla de login de usuarios"""
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
 
         usuario = Usuario.query.filter_by(username=username).first()
 
         # ✅ Comprobación segura de contraseña
         if usuario and usuario.check_password(password):
+            session.clear()  # Limpia cualquier sesión previa
             session['user_id'] = usuario.id
             session['rol'] = usuario.rol
+            session.permanent = True  # Marca la sesión como permanente (necesario para que respete el tiempo configurado en app.py)
             flash("Login exitoso.", "success")
             return redirect(url_for('dashboard'))
         else:
@@ -28,10 +30,9 @@ def login():
 
 @auth_bp.route('/logout')
 def logout():
-    """Cerrar sesión"""
-    session.pop('user_id', None)
-    session.pop('rol', None)
-    flash("Sesión cerrada correctamente.", "info")
+    """Cerrar sesión manualmente o por inactividad"""
+    session.clear()  # Limpia toda la sesión
+    flash("Tu sesión ha finalizado.", "warning")
     return redirect(url_for('auth.login'))
 
 
@@ -39,8 +40,8 @@ def logout():
 def register():
     """Pantalla de registro de nuevos usuarios"""
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
 
         # Validar si el usuario ya existe
         if Usuario.query.filter_by(username=username).first():
@@ -54,8 +55,10 @@ def register():
         db.session.commit()
 
         # Iniciar sesión automáticamente después del registro
+        session.clear()
         session['user_id'] = nuevo.id
         session['rol'] = nuevo.rol
+        session.permanent = True
         flash("Registro exitoso. ¡Bienvenido!", "success")
         return redirect(url_for('dashboard'))
 
