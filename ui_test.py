@@ -4,7 +4,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# ⚡ webdriver-manager administra de forma automáticamente el ChromeDriver
+# webdriver-manager administra de forma automáticamente el ChromeDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
 try:
