@@ -1,64 +1,63 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models import db, Proveedor
+from utils.security import require_roles  # 🔐 Control de roles
 
 proveedor_bp = Blueprint('proveedor', __name__, url_prefix='/proveedor')
 
-# ---- Decorador para exigir login ----
-def login_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "user_id" not in session:
-            return redirect(url_for("auth.login"))
-        return f(*args, **kwargs)
-    return decorated_function
 
-
-# ---- Listar proveedores ----
+# ---- Listar proveedores (solo administradores) ----
 @proveedor_bp.route("/")
-@login_required
+@require_roles('administrador')
 def index():
     proveedores = Proveedor.query.all()
     return render_template("proveedores.html", proveedores=proveedores)
 
 
-# ---- Crear proveedor ----
+# ---- Crear proveedor (solo administradores) ----
 @proveedor_bp.route('/nuevo', methods=['GET', 'POST'])
-@login_required
+@require_roles('administrador')
 def nuevo_proveedor():
     if request.method == 'POST':
-        nombre = request.form['nombre']
-        contacto = request.form.get('contacto')
-        email = request.form.get('email')  # ✅ nuevo campo
-        p = Proveedor(nombre=nombre, contacto=contacto, email=email)
-        db.session.add(p)
+        nombre = request.form.get('nombre', '').strip()
+        contacto = request.form.get('contacto', '').strip()
+        email = request.form.get('email', '').strip()
+
+        if not nombre:
+            flash('El nombre del proveedor es obligatorio.', 'warning')
+            return redirect(url_for('proveedor.nuevo_proveedor'))
+
+        nuevo = Proveedor(nombre=nombre, contacto=contacto, email=email)
+        db.session.add(nuevo)
         db.session.commit()
         flash('Proveedor creado correctamente ✅', 'success')
         return redirect(url_for('proveedor.index'))
+
     return render_template('nuevo_proveedor.html')
 
 
-# ---- Editar proveedor ----
+# ---- Editar proveedor (solo administradores) ----
 @proveedor_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
+@require_roles('administrador')
 def editar_proveedor(id):
-    p = Proveedor.query.get_or_404(id)
+    proveedor = Proveedor.query.get_or_404(id)
+
     if request.method == 'POST':
-        p.nombre = request.form['nombre']
-        p.contacto = request.form.get('contacto')
-        p.email = request.form.get('email')  # ✅ actualizar campo
+        proveedor.nombre = request.form.get('nombre', '').strip()
+        proveedor.contacto = request.form.get('contacto', '').strip()
+        proveedor.email = request.form.get('email', '').strip()
         db.session.commit()
         flash('Proveedor actualizado correctamente ✅', 'success')
         return redirect(url_for('proveedor.index'))
-    return render_template('editar_proveedor.html', proveedor=p)
+
+    return render_template('editar_proveedor.html', proveedor=proveedor)
 
 
-# ---- Eliminar proveedor ----
+# ---- Eliminar proveedor (solo administradores, usando POST) ----
 @proveedor_bp.route('/eliminar/<int:id>', methods=['POST'])
-@login_required
+@require_roles('administrador')
 def eliminar_proveedor(id):
-    p = Proveedor.query.get_or_404(id)
-    db.session.delete(p)
+    proveedor = Proveedor.query.get_or_404(id)
+    db.session.delete(proveedor)
     db.session.commit()
-    flash('Proveedor eliminado correctamente ✅', 'success')
+    flash('Proveedor eliminado correctamente ✅', 'info')
     return redirect(url_for('proveedor.index'))

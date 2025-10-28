@@ -3,41 +3,60 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="card shadow">
-        <div class="card-header bg-success text-white">
-            <h4 class="mb-0"><i class="bi bi-shop"></i> Registrar Nueva Tienda</h4>
-        </div>
-        <div class="card-body">
-            <!-- Migas de pan y botón volver -->
-            <nav aria-label="breadcrumb" class="mb-3">
-              <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('tienda.index') }}">Tiendas</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Nueva Tienda</li>
-              </ol>
-            </nav>
-            <div class="mb-3">
-                <a href="{{ url_for('tienda.index') }}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left-circle"></i> Cancelar y Volver
-                </a>
-            </div>
-
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="nombre" class="form-label">Nombre de la Tienda</label>
-                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ej: Tienda Central" required>
-                </div>
-
-                <div class="mb-3">
-                    <label for="direccion" class="form-label">Dirección</label>
-                    <input type="text" class="form-control" id="direccion" name="direccion" placeholder="Ej: Av. Principal 1234, Santiago">
-                </div>
-
-                <button type="submit" class="btn btn-success">
-                    <i class="bi bi-check-circle"></i> Guardar Tienda
-                </button>
-            </form>
-        </div>
+  <div class="card shadow">
+    <div class="card-header bg-success text-white">
+      <h4 class="mb-0"><i class="bi bi-shop"></i> Registrar Nueva Tienda</h4>
     </div>
+    <div class="card-body">
+      <!-- Migas de pan y botón volver -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('tienda.index') }}">Tiendas</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Nueva Tienda</li>
+        </ol>
+      </nav>
+
+      <div class="mb-3">
+        <a href="{{ url_for('tienda.index') }}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left-circle"></i> Cancelar y Volver
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary ms-2">
+          <i class="bi bi-house-door"></i> Volver al Dashboard
+        </a>
+      </div>
+
+      <form method="POST" autocomplete="off" novalidate>
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre de la Tienda</label>
+          <input type="text" class="form-control" id="nombre" name="nombre"
+                 placeholder="Ej: Tienda Central" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="ubicacion" class="form-label">Ubicación</label>
+          <input type="text" class="form-control" id="ubicacion" name="ubicacion"
+                 placeholder="Ej: Av. Principal 1234, Santiago">
+        </div>
+
+        <!-- Nuevos campos -->
+        <div class="mb-3">
+          <label for="contacto" class="form-label">Contacto</label>
+          <input type="text" class="form-control" id="contacto" name="contacto"
+                 placeholder="Nombre del encargado o contacto">
+        </div>
+
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="email" name="email"
+                 placeholder="correo@ejemplo.com">
+        </div>
+
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-check-circle"></i> Guardar Tienda
+        </button>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

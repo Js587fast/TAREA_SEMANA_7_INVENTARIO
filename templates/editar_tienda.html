@@ -3,41 +3,83 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="card shadow">
-        <div class="card-header bg-warning text-dark">
-            <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Tienda</h4>
-        </div>
-        <div class="card-body">
-            <!-- Migas de pan y botón volver -->
-            <nav aria-label="breadcrumb" class="mb-3">
-              <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('tienda.index') }}">Tiendas</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Editar Tienda</li>
-              </ol>
-            </nav>
-            <div class="mb-3">
-                <a href="{{ url_for('tienda.index') }}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left-circle"></i> Cancelar y Volver
-                </a>
-            </div>
-
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="nombre" class="form-label">Nombre de la Tienda</label>
-                    <input type="text" class="form-control" id="nombre" name="nombre" value="{{ tienda.nombre }}" required>
-                </div>
-
-                <div class="mb-3">
-                    <label for="direccion" class="form-label">Dirección</label>
-                    <input type="text" class="form-control" id="direccion" name="direccion" value="{{ tienda.direccion }}">
-                </div>
-
-                <button type="submit" class="btn btn-warning text-dark">
-                    <i class="bi bi-save"></i> Actualizar Tienda
-                </button>
-            </form>
-        </div>
+  <div class="card shadow">
+    <div class="card-header bg-warning text-dark">
+      <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Tienda</h4>
     </div>
+
+    <div class="card-body">
+      <!-- Migas de pan y botón volver -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('tienda.index') }}">Tiendas</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Editar Tienda</li>
+        </ol>
+      </nav>
+
+      <div class="mb-3">
+        <a href="{{ url_for('tienda.index') }}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left-circle"></i> Cancelar y Volver
+        </a>
+      </div>
+
+      <!--  Mensaje flash de actualización -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" id="flash-message">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST">
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre de la Tienda</label>
+          <input type="text" class="form-control" id="nombre" name="nombre"
+                 value="{{ tienda.nombre }}" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="ubicacion" class="form-label">Ubicación</label>
+          <input type="text" class="form-control" id="ubicacion" name="ubicacion"
+                 value="{{ tienda.ubicacion }}">
+        </div>
+
+        <!--  Nuevos campos agregados -->
+        <div class="mb-3">
+          <label for="contacto" class="form-label">Contacto</label>
+          <input type="text" class="form-control" id="contacto" name="contacto"
+                 placeholder="Nombre del encargado"
+                 value="{{ tienda.contacto or '' }}">
+        </div>
+
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="email" name="email"
+                 placeholder="correo@ejemplo.com"
+                 value="{{ tienda.email or '' }}">
+        </div>
+
+        <button type="submit" class="btn btn-warning text-dark">
+          <i class="bi bi-save"></i> Actualizar Tienda
+        </button>
+      </form>
+    </div>
+  </div>
 </div>
+
+<!-- Script para ocultar automáticamente los mensajes flash -->
+<script>
+  const flash = document.getElementById("flash-message");
+  if (flash) {
+    setTimeout(() => {
+      flash.classList.remove("show");
+      flash.classList.add("fade");
+    }, 3000); // Desaparece en 3 segundos
+  }
+</script>
 {% endblock %}

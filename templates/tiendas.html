@@ -3,66 +3,81 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h4 class="mb-0"><i class="bi bi-shop"></i> Lista de Tiendas</h4>
-            <a href="{{ url_for('tienda.nueva_tienda') }}" class="btn btn-success">
-                <i class="bi bi-plus-lg"></i> Nueva Tienda
-            </a>
-        </div>
-        <div class="card-body">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h4 class="mb-0"><i class="bi bi-shop"></i> Lista de Tiendas</h4>
 
-            <!-- Migas de pan y botón volver -->
-            <nav aria-label="breadcrumb" class="mb-3">
-              <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Tiendas</li>
-              </ol>
-            </nav>
-            <div class="mb-3">
-                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left-circle"></i> Volver al Dashboard
-                </a>
-            </div>
-
-            {% if tiendas %}
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle">
-                    <thead class="table-primary">
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Dirección</th>
-                            <th class="text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for t in tiendas %}
-                        <tr>
-                            <td>{{ t.id_tienda }}</td>
-                            <td>{{ t.nombre }}</td>
-                            <td>{{ t.direccion or '—' }}</td>
-                            <td class="text-center">
-                                <a href="{{ url_for('tienda.editar_tienda', id=t.id_tienda) }}" class="btn btn-sm btn-warning">
-                                    <i class="bi bi-pencil-square"></i> Editar
-                                </a>
-                                <form action="{{ url_for('tienda.eliminar_tienda', id=t.id_tienda) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('¿Seguro que deseas eliminar esta tienda?');">
-                                    <button type="submit" class="btn btn-sm btn-danger">
-                                        <i class="bi bi-trash"></i> Eliminar
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="alert alert-info text-center">
-                No hay tiendas registradas aún.
-            </div>
-            {% endif %}
-        </div>
+      {% if session.get('rol') == 'administrador' %}
+      <a href="{{ url_for('tienda.nueva_tienda') }}" class="btn btn-success">
+        <i class="bi bi-plus-lg"></i> Nueva Tienda
+      </a>
+      {% endif %}
     </div>
+
+    <div class="card-body">
+      <!-- Migas de pan y volver -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Tiendas</li>
+        </ol>
+      </nav>
+
+      <div class="mb-3">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left-circle"></i> Volver al Dashboard
+        </a>
+      </div>
+
+      {% if tiendas %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+          <thead class="table-primary">
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Ubicación</th>
+              <th>Contacto</th>
+              <th>Email</th>
+              {% if session.get('rol') == 'administrador' %}
+              <th class="text-center">Acciones</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tiendas %}
+            <tr>
+              <td>{{ t.id_tienda }}</td>
+              <td>{{ t.nombre }}</td>
+              <td>{{ t.ubicacion or '—' }}</td>
+              <td>{{ t.contacto or '—' }}</td>
+              <td>{{ t.email or '—' }}</td>
+
+              {% if session.get('rol') == 'administrador' %}
+              <td class="text-center">
+                <a href="{{ url_for('tienda.editar_tienda', id=t.id_tienda) }}" class="btn btn-sm btn-warning">
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+                <form action="{{ url_for('tienda.eliminar_tienda', id=t.id_tienda) }}" method="POST"
+                      style="display:inline-block;"
+                      onsubmit="return confirm('¿Seguro que deseas eliminar esta tienda?');">
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    <i class="bi bi-trash"></i> Eliminar
+                  </button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-info text-center">
+        No hay tiendas registradas aún.
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}

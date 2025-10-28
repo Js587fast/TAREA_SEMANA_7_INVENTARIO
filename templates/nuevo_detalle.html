@@ -117,7 +117,7 @@ const detallesDiv = document.getElementById('detalles');
 const totalVentaSpan = document.getElementById('totalVenta');
 const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' });
 
-// 🔥 Reindexa todas las líneas de detalle
+// Reindexa todas las líneas de detalle
 function reindexarLineas() {
   const lineas = detallesDiv.querySelectorAll('.detalle-item');
   lineas.forEach((item, index) => {

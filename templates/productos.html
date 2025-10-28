@@ -44,7 +44,7 @@
                         <tr>
                             <td>{{ p.id_producto }}</td>
                             <td>{{ p.nombre }}</td>
-                            <!-- ✅ Mostrar precio formateado en pesos  -->
+                            <!-- Mostrar precio formateado en pesos  -->
                             <td>${{ "{:,.0f}".format(p.precio) }} CLP</td>
                             <td>{{ p.stock }}</td>
                             <td>{{ p.proveedor.nombre if p.proveedor else 'Sin proveedor' }}</td>

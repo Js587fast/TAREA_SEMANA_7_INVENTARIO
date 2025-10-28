@@ -1,21 +1,17 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models import db, Venta, Cliente, Producto, DetalleVenta, Inventario, Tienda
 from datetime import date
-from functools import wraps
 from sqlalchemy.orm import joinedload
+from utils.security import require_roles  # 🔐 Importacion control de roles
 
 venta_bp = Blueprint('venta', __name__, url_prefix='/venta')
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "user_id" not in session:
-            flash("Debes iniciar sesión para continuar", "warning")
-            return redirect(url_for("auth.login"))
-        return f(*args, **kwargs)
-    return decorated_function
 
+# -------------------------------
+# FUNCIONES AUXILIARES
+# -------------------------------
 def parsear_detalles(form):
+    """Convierte los campos del formulario en una estructura dict de detalles de venta."""
     detalles = {}
     for key, value in form.items():
         if key.startswith("detalles"):
@@ -23,15 +19,20 @@ def parsear_detalles(form):
             index = parts[0]
             field = parts[1]
             detalles.setdefault(index, {})[field] = value
-    # Quitar líneas vacías o sin producto/cantidad
+
+    # Quitar líneas vacías
     depurados = {}
     for i, det in detalles.items():
         if str(det.get("id_producto", "")).strip() and str(det.get("cantidad", "")).strip():
             depurados[i] = det
     return depurados
 
+
+# -------------------------------
+# NUEVA VENTA (solo administradores)
+# -------------------------------
 @venta_bp.route("/nuevo", methods=["GET", "POST"])
-@login_required
+@require_roles('administrador')
 def nueva_venta():
     clientes = Cliente.query.all()
     productos = Producto.query.all()
@@ -49,7 +50,7 @@ def nueva_venta():
 
             venta = Venta(fecha=fecha, total=0, id_cliente=id_cliente, id_tienda=id_tienda)
             db.session.add(venta)
-            db.session.flush()  # obtén id_venta
+            db.session.flush()  # Se obtiene id_venta
 
             total = 0
             detalles = parsear_detalles(request.form)
@@ -107,8 +108,12 @@ def nueva_venta():
 
     return render_template("nueva_venta.html", clientes=clientes, productos=productos, tiendas=tiendas)
 
+
+# -------------------------------
+# EDITAR VENTA (solo administradores)
+# -------------------------------
 @venta_bp.route("/editar/<int:id_venta>", methods=["GET", "POST"])
-@login_required
+@require_roles('administrador')
 def editar_venta(id_venta):
     venta = Venta.query.options(
         joinedload(Venta.detalles).joinedload(DetalleVenta.producto)
@@ -121,7 +126,7 @@ def editar_venta(id_venta):
 
     if request.method == "POST":
         try:
-            # 1) Devolver stock de los detalles actuales
+            # 1) Revertir stock actual
             for detalle in venta.detalles:
                 inv = Inventario.query.filter_by(id_producto=detalle.id_producto, id_tienda=id_tienda).first()
                 if inv:
@@ -134,7 +139,7 @@ def editar_venta(id_venta):
             venta.id_cliente = int(request.form.get("id_cliente", venta.id_cliente))
             venta.fecha = request.form.get("fecha") or venta.fecha
 
-            # 4) Parsear y revalidar
+            # 4) Nuevos detalles
             total = 0
             detalles = parsear_detalles(request.form)
             if not detalles:
@@ -181,7 +186,7 @@ def editar_venta(id_venta):
 
             venta.total = total
             db.session.commit()
-            flash("✅ Venta actualizada y stock de inventario recalculado", "success")
+            flash("✅ Venta actualizada y stock recalculado correctamente.", "success")
             return redirect(url_for("dashboard"))
 
         except Exception as e:
@@ -191,13 +196,16 @@ def editar_venta(id_venta):
 
     return render_template("editar_venta.html", venta=venta, clientes=clientes, productos=productos, tiendas=tiendas)
 
+
+# -------------------------------
+# ELIMINAR VENTA (solo administradores)
+# -------------------------------
 @venta_bp.route("/eliminar/<int:id_venta>", methods=["POST"])
-@login_required
+@require_roles('administrador')
 def eliminar_venta(id_venta):
     venta = Venta.query.get_or_404(id_venta)
     id_tienda = venta.id_tienda
     try:
-        # Devolver stock y borrar detalles
         for detalle in venta.detalles:
             inv = Inventario.query.filter_by(id_producto=detalle.id_producto, id_tienda=id_tienda).first()
             if inv:
@@ -206,7 +214,7 @@ def eliminar_venta(id_venta):
 
         db.session.delete(venta)
         db.session.commit()
-        flash("🗑️ Venta eliminada y stock de inventario restaurado", "success")
+        flash("🗑️ Venta eliminada y stock restaurado correctamente.", "info")
     except Exception as e:
         db.session.rollback()
         flash(f"⚠️ No se pudo eliminar la venta: {str(e)}", "danger")

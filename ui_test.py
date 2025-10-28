@@ -10,7 +10,7 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 try:
     # Lleva a la página de login
     driver.get("http://127.0.0.1:5000/login")
-    print("✅ Página de login cargada")
+    print("Página de login cargada")
 
     # Se completa el formulario de login con usuario de prueba
     user_input = driver.find_element(By.NAME, "username")

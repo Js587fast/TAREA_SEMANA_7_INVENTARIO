@@ -1,6 +1,6 @@
 /* Fondo de pantalla */
 body {
-    background: url('../imagenes/imagen_inventario.jpg') no-repeat center center fixed;
+    background: url('../imagenes/imagen_fondo.jpg') no-repeat center center fixed;
     background-size: cover;
     font-family: Arial, sans-serif;
 }

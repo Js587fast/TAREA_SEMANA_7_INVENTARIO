@@ -1,45 +1,38 @@
-# inventario_pymes/routes/detalle.py
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models import db, DetalleVenta, Venta, Producto, Cliente, Tienda
-from functools import wraps
+from utils.security import require_roles  # 🔐 Importamos el decorador para roles
 
 # -------------------------------
 # BLUEPRINT DETALLE
 # -------------------------------
 detalle_bp = Blueprint('detalle', __name__, url_prefix='/detalle')
 
-# -------------------------------
-# DECORADOR LOGIN
-# -------------------------------
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "user_id" not in session:
-            return redirect(url_for("auth.login"))
-        return f(*args, **kwargs)
-    return decorated_function
 
 # -------------------------------
-# NUEVO DETALLE (crea venta y detalle juntos)
+# NUEVO DETALLE (solo administradores)
 # -------------------------------
 @detalle_bp.route("/nuevo", methods=["GET", "POST"])
-@login_required
+@require_roles('administrador')
 def nuevo_detalle():
     clientes = Cliente.query.all()
     productos = Producto.query.all()
-    tiendas = Tienda.query.all()  # 👈 importante: traer tiendas
+    tiendas = Tienda.query.all()
 
     if request.method == "POST":
         try:
-            id_cliente = int(request.form["id_cliente"])
-            id_tienda = int(request.form["id_tienda"])  # 👈 ahora pedimos la tienda
+            id_cliente = int(request.form.get("id_cliente", 0))
+            id_tienda = int(request.form.get("id_tienda", 0))
 
-            # Crear venta nueva para el cliente y la tienda
+            if not id_cliente or not id_tienda:
+                flash("⚠️ Debes seleccionar cliente y tienda.", "warning")
+                return redirect(url_for("detalle.nuevo_detalle"))
+
+            # Crear venta nueva
             venta = Venta(id_cliente=id_cliente, id_tienda=id_tienda, total=0)
             db.session.add(venta)
-            db.session.flush()  # obtener id_venta antes de commit
+            db.session.flush()  # Se obtiene id_venta antes de commit
 
-            # Procesar detalles dinámicos enviados por el formulario
+            # Se procesan detalles del formulario
             detalles = {}
             for key, value in request.form.items():
                 if key.startswith("detalles"):
@@ -59,7 +52,7 @@ def nuevo_detalle():
 
                 # Validar stock
                 if producto.stock < cantidad:
-                    flash(f"Stock insuficiente para {producto.nombre}", "danger")
+                    flash(f"❌ Stock insuficiente para {producto.nombre}", "danger")
                     db.session.rollback()
                     return redirect(url_for("detalle.nuevo_detalle"))
 
@@ -78,16 +71,15 @@ def nuevo_detalle():
                 # Actualizar stock
                 producto.stock -= cantidad
 
-            # Guardar total de la venta
             venta.total = total_venta
-
             db.session.commit()
-            flash("Venta y detalles registrados correctamente ✅", "success")
+
+            flash("✅ Venta y detalles registrados correctamente.", "success")
             return redirect(url_for("dashboard"))
 
         except Exception as e:
             db.session.rollback()
-            flash(f"Error al guardar detalle: {str(e)}", "danger")
+            flash(f"⚠️ Error al guardar detalle: {str(e)}", "danger")
             return redirect(url_for("detalle.nuevo_detalle"))
 
     return render_template(
@@ -97,11 +89,12 @@ def nuevo_detalle():
         tiendas=tiendas
     )
 
+
 # -------------------------------
-# EDITAR DETALLE
+# EDITAR DETALLE (solo administradores)
 # -------------------------------
 @detalle_bp.route("/editar/<int:id_detalle>", methods=["GET", "POST"])
-@login_required
+@require_roles('administrador')
 def editar_detalle(id_detalle):
     detalle = DetalleVenta.query.get_or_404(id_detalle)
     ventas = Venta.query.all()
@@ -135,12 +128,12 @@ def editar_detalle(id_detalle):
             venta.total = sum(d.subtotal for d in venta.detalles)
 
             db.session.commit()
-            flash("Detalle actualizado correctamente ✅", "success")
+            flash("✅ Detalle actualizado y stock ajustado correctamente.", "success")
             return redirect(url_for("dashboard"))
 
         except Exception as e:
             db.session.rollback()
-            flash(f"Error al actualizar el detalle: {str(e)}", "danger")
+            flash(f"⚠️ Error al actualizar el detalle: {str(e)}", "danger")
             return redirect(url_for("detalle.editar_detalle", id_detalle=id_detalle))
 
     return render_template(
@@ -150,26 +143,32 @@ def editar_detalle(id_detalle):
         productos=productos
     )
 
+
 # -------------------------------
-# ELIMINAR DETALLE
+# ELIMINAR DETALLE (solo administradores)
 # -------------------------------
 @detalle_bp.route("/eliminar/<int:id_detalle>", methods=["POST"])
-@login_required
+@require_roles('administrador')
 def eliminar_detalle(id_detalle):
     detalle = DetalleVenta.query.get_or_404(id_detalle)
-    venta = detalle.venta  # venta asociada
-
-    # Devolver stock
+    venta = detalle.venta
     producto = detalle.producto
-    producto.stock += detalle.cantidad
 
-    # Borrar detalle
-    db.session.delete(detalle)
-    db.session.commit()
+    try:
+        # Devolver stock
+        producto.stock += detalle.cantidad
 
-    # Recalcular total de la venta
-    venta.total = sum(d.subtotal for d in venta.detalles)
-    db.session.commit()
+        # Borrar detalle
+        db.session.delete(detalle)
+        db.session.commit()
 
-    flash("Detalle eliminado y stock devuelto correctamente ✅", "success")
+        # Recalcular total de la venta
+        venta.total = sum(d.subtotal for d in venta.detalles)
+        db.session.commit()
+
+        flash("🗑️ Detalle eliminado y stock devuelto correctamente.", "info")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"⚠️ Error al eliminar el detalle: {str(e)}", "danger")
+
     return redirect(url_for("dashboard"))

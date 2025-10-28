@@ -18,7 +18,7 @@ class Usuario(db.Model):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        # ✅ Manejo de hashes vacíos o inválidos para evitar ValueError
+        # Manejo de hashes vacíos o inválidos para evitar ValueError
         if not self.password_hash:
             return False
         try:
@@ -77,6 +77,9 @@ class Tienda(db.Model):
     id_tienda = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     ubicacion = db.Column(db.String(150))
+    # NUEVOS CAMPOS
+    contacto = db.Column(db.String(100))       # nombre del encargado
+    email = db.Column(db.String(100))          # correo de contacto
 
     def __repr__(self):
         return f"<Tienda {self.nombre}>"

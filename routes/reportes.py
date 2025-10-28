@@ -1,10 +1,12 @@
 # inventario_pymes/routes/reportes.py
-from flask import Blueprint, send_file, request
+from flask import Blueprint, send_file, request, flash
 from io import BytesIO
 import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from datetime import date
 from models import db, Inventario, Producto, Tienda, Venta, Cliente, Proveedor, DetalleVenta
+from utils.security import require_roles  # 🔐 permitir usuario/administrador
 
 reportes_bp = Blueprint('reportes', __name__)
 
@@ -19,8 +21,10 @@ def obtener_datos_inventario():
         Producto.nombre.label("Producto"),
         Tienda.nombre.label("Tienda"),
         Inventario.cantidad.label("Cantidad Disponible")
-    ).join(Producto, Inventario.id_producto == Producto.id_producto
-    ).join(Tienda, Inventario.id_tienda == Tienda.id_tienda
+    ).join(
+        Producto, Inventario.id_producto == Producto.id_producto
+    ).join(
+        Tienda, Inventario.id_tienda == Tienda.id_tienda
     ).all()
     return [dict(row._mapping) for row in data]
 
@@ -31,7 +35,8 @@ def obtener_datos_ventas():
         Venta.fecha.label("Fecha"),
         Venta.total.label("Total CLP"),
         Cliente.nombre.label("Cliente")
-    ).join(Cliente, Venta.id_cliente == Cliente.id_cliente
+    ).join(
+        Cliente, Venta.id_cliente == Cliente.id_cliente
     ).all()
     return [dict(row._mapping) for row in data]
 
@@ -54,9 +59,20 @@ def obtener_datos_proveedores():
     ).all()
     return [dict(row._mapping) for row in data]
 
+def _parse_fecha(value):
+    """Parsea YYYY-MM-DD a date. Retorna None si es inválida."""
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except Exception:
+        return None
+
 def obtener_detalle_ventas(fecha_inicio=None, fecha_fin=None, cliente=None):
     """
     Detalle de ventas con filtros opcionales.
+    fecha_inicio/fin: date | None
+    cliente: int | None
     """
     query = db.session.query(
         DetalleVenta.id_detalle.label("ID Detalle"),
@@ -68,12 +84,16 @@ def obtener_detalle_ventas(fecha_inicio=None, fecha_fin=None, cliente=None):
         (DetalleVenta.subtotal / DetalleVenta.cantidad).label("Precio Unitario CLP"),
         DetalleVenta.subtotal.label("Subtotal CLP"),
         Venta.fecha.label("Fecha Venta")
-    ).join(Venta, DetalleVenta.id_venta == Venta.id_venta
-    ).join(Cliente, Venta.id_cliente == Cliente.id_cliente
-    ).join(Tienda, Venta.id_tienda == Tienda.id_tienda
-    ).join(Producto, DetalleVenta.id_producto == Producto.id_producto)
+    ).join(
+        Venta, DetalleVenta.id_venta == Venta.id_venta
+    ).join(
+        Cliente, Venta.id_cliente == Cliente.id_cliente
+    ).join(
+        Tienda, Venta.id_tienda == Tienda.id_tienda
+    ).join(
+        Producto, DetalleVenta.id_producto == Producto.id_producto
+    )
 
-    # Aplicar filtros
     if fecha_inicio:
         query = query.filter(Venta.fecha >= fecha_inicio)
     if fecha_fin:
@@ -120,7 +140,7 @@ def generar_pdf(data, titulo="Reporte"):
 
     for idx, key in enumerate(keys):
         if idx < len(x_positions):
-            c.drawString(x_positions[idx], y, key)
+            c.drawString(x_positions[idx], y, str(key))
     y -= 15
 
     # Contenido
@@ -136,7 +156,7 @@ def generar_pdf(data, titulo="Reporte"):
             c.setFont("Helvetica-Bold", 9)
             for idx, key in enumerate(keys):
                 if idx < len(x_positions):
-                    c.drawString(x_positions[idx], y, key)
+                    c.drawString(x_positions[idx], y, str(key))
             y -= 15
             c.setFont("Helvetica", 8)
 
@@ -145,32 +165,42 @@ def generar_pdf(data, titulo="Reporte"):
     return buffer
 
 # =====================================================
-# GENERADOR DE RUTAS
+# GENERADOR DE RUTAS CON CONTROL DE ROLES
 # =====================================================
 
 def crear_ruta_reporte(nombre, funcion_datos, titulo, con_filtros=False):
     @reportes_bp.route(f'/reporte/{nombre}')
+    @require_roles('usuario', 'administrador')  # ambos roles pueden generar reportes
     def reporte():
-        formato = request.args.get('formato', 'excel')
+        formato = (request.args.get('formato') or 'excel').lower()
+
         if con_filtros:
-            fecha_inicio = request.args.get('fecha_inicio')
-            fecha_fin = request.args.get('fecha_fin')
-            cliente = request.args.get('cliente')
+            # Parseo seguro de filtros
+            fecha_inicio = _parse_fecha(request.args.get('fecha_inicio'))
+            fecha_fin = _parse_fecha(request.args.get('fecha_fin'))
+            cliente_raw = request.args.get('cliente')
+            cliente = None
+            try:
+                cliente = int(cliente_raw) if cliente_raw else None
+            except Exception:
+                cliente = None
+
             data = funcion_datos(
-                fecha_inicio=fecha_inicio or None,
-                fecha_fin=fecha_fin or None,
-                cliente=int(cliente) if cliente else None
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                cliente=cliente
             )
         else:
             data = funcion_datos()
 
-        if formato.lower() == 'pdf':
+        if formato == 'pdf':
             pdf = generar_pdf(data, titulo=titulo)
             return send_file(pdf, download_name=f"reporte_{nombre}.pdf", as_attachment=True)
-        else:
+        else:  # default: excel
             excel = generar_excel(data)
             return send_file(excel, download_name=f"reporte_{nombre}.xlsx", as_attachment=True)
 
+    # Asegurar endpoint único
     reporte.__name__ = f"reporte_{nombre}"
     return reporte
 

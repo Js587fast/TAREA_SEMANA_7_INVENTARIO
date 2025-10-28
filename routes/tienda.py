@@ -1,81 +1,79 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models import db, Tienda
-from functools import wraps
+from utils.security import require_roles  # 🔐 control de roles
 
 tienda_bp = Blueprint('tienda', __name__, url_prefix='/tienda')
 
 
-# ---- Decorador para exigir login ----
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "user_id" not in session:
-            flash("Debes iniciar sesión para continuar", "warning")
-            return redirect(url_for("auth.login"))
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-# ---- Listar Tiendas ----
+# ---- Listar Tiendas (visible para usuario y administrador) ----
 @tienda_bp.route("/")
-@login_required
+@require_roles('usuario', 'administrador')
 def index():
     tiendas = Tienda.query.all()
     return render_template("tiendas.html", tiendas=tiendas)
 
 
-# ---- Crear Tienda ----
+# ---- Crear Tienda (solo administrador) ----
 @tienda_bp.route("/nuevo", methods=["GET", "POST"])
-@login_required
+@require_roles('administrador')
 def nueva_tienda():
     if request.method == "POST":
-        nombre = request.form.get("nombre")
-        ubicacion = request.form.get("ubicacion")
+        nombre = request.form.get("nombre", "").strip()
+        ubicacion = request.form.get("ubicacion", "").strip()
+        contacto = request.form.get("contacto", "").strip()
+        email = request.form.get("email", "").strip()
 
         if not nombre:
-            flash("⚠️ El nombre de la tienda es obligatorio.", "danger")
+            flash("⚠️ El nombre de la tienda es obligatorio.", "warning")
             return redirect(url_for("tienda.nueva_tienda"))
 
-        nueva = Tienda(nombre=nombre, ubicacion=ubicacion)
+        nueva = Tienda(
+            nombre=nombre,
+            ubicacion=ubicacion,
+            contacto=contacto,
+            email=email
+        )
         db.session.add(nueva)
         db.session.commit()
-        flash("✅ Tienda registrada correctamente", "success")
+
+        flash(f"✅ Tienda «{nombre}» registrada correctamente.", "success")
         return redirect(url_for("tienda.index"))
 
     return render_template("nueva_tienda.html")
 
 
-# ---- Editar Tienda ----
+# ---- Editar Tienda (solo administrador) ----
 @tienda_bp.route("/editar/<int:id>", methods=["GET", "POST"])
-@login_required
+@require_roles('administrador')
 def editar_tienda(id):
     t = Tienda.query.get_or_404(id)
 
     if request.method == "POST":
-        t.nombre = request.form.get("nombre")
-        t.ubicacion = request.form.get("ubicacion")
+        t.nombre = request.form.get("nombre", "").strip()
+        t.ubicacion = request.form.get("ubicacion", "").strip()
+        t.contacto = request.form.get("contacto", "").strip()
+        t.email = request.form.get("email", "").strip()
 
         if not t.nombre:
-            flash("⚠️ El nombre de la tienda es obligatorio.", "danger")
+            flash("⚠️ El nombre de la tienda es obligatorio.", "warning")
             return redirect(url_for("tienda.editar_tienda", id=id))
 
         db.session.commit()
-        flash("✅ Tienda actualizada correctamente", "success")
+        flash(f"✅ Tienda «{t.nombre}» actualizada correctamente.", "success")
         return redirect(url_for("tienda.index"))
 
     return render_template("editar_tienda.html", tienda=t)
 
 
-# ---- Eliminar Tienda ----
+# ---- Eliminar Tienda (solo administrador, por POST) ----
 @tienda_bp.route("/eliminar/<int:id>", methods=["POST"])
-@login_required
+@require_roles('administrador')
 def eliminar_tienda(id):
     t = Tienda.query.get_or_404(id)
-
     try:
         db.session.delete(t)
         db.session.commit()
-        flash("🗑️ Tienda eliminada correctamente", "success")
+        flash(f"🗑️ Tienda «{t.nombre}» eliminada correctamente.", "info")
     except Exception as e:
         db.session.rollback()
         flash(f"⚠️ No se pudo eliminar la tienda: {str(e)}", "danger")
