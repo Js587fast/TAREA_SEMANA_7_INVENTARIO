@@ -55,11 +55,10 @@ Funcionalidades principales:
 •	 Roles de usuario: Administrador / Usuario.
 
 Ejecución local:
-
-1.	1. Clonar el repositorio: git clone https://github.com/Js587fast/TAREA_SEMANA_9_INVENTARIO.git
-2.	2. Crear entorno virtual e instalar dependencias: python -m venv venv, venv\Scripts\activate, pip install -r requirements.txt
-3.	3. Ejecutar el proyecto: flask run
-4.	4. Abrir en el navegador: http://127.0.0.1:5000
+1. Clonar el repositorio: git clone https://github.com/Js587fast/TAREA_SEMANA_9_INVENTARIO.git
+2. Crear entorno virtual e instalar dependencias: python -m venv venv, venv\Scripts\activate, pip install -r requirements.txt
+3. Ejecutar el proyecto: flask run
+4. Abrir en el navegador: http://127.0.0.1:5000
 
 Autor: Juan Silva
 Repositorio: https://github.com/Js587fast/TAREA_SEMANA_9_INVENTARIO
