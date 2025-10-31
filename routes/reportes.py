@@ -1,11 +1,14 @@
 # inventario_pymes/routes/reportes.py
-from flask import Blueprint, send_file, request, flash
-from io import BytesIO
+from flask import Blueprint, send_file, request, flash, redirect, url_for, session, render_template, make_response
+from io import BytesIO, StringIO
+import csv, json
 import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from datetime import date
-from models import db, Inventario, Producto, Tienda, Venta, Cliente, Proveedor, DetalleVenta
+from decimal import Decimal
+
+from models import db, Inventario, Producto, Tienda, Venta, Cliente, Proveedor, DetalleVenta, Auditoria
 from utils.security import require_roles  # 🔐 permitir usuario/administrador
 
 reportes_bp = Blueprint('reportes', __name__)
@@ -212,3 +215,119 @@ crear_ruta_reporte("ventas", obtener_datos_ventas, "Reporte de Ventas")
 crear_ruta_reporte("clientes", obtener_datos_clientes, "Reporte de Clientes")
 crear_ruta_reporte("proveedores", obtener_datos_proveedores, "Reporte de Proveedores")
 crear_ruta_reporte("detalle_ventas", obtener_detalle_ventas, "Detalle de Ventas", con_filtros=True)
+
+# =====================================================
+# ADMIN: RECALCULAR TOTALES + AUDITORÍA
+# =====================================================
+
+@reportes_bp.route("/admin/recalcular_totales", methods=["POST"])
+@require_roles("administrador")
+def admin_recalcular_totales():
+    """
+    Recalcula:
+      - DetalleVenta.subtotal = cantidad * Producto.precio (precio actual)
+      - Venta.total = SUM(DetalleVenta.subtotal)
+    y registra auditoría con conteos.
+    """
+    try:
+        # 1) Recalcular subtotales
+        detalles = DetalleVenta.query.all()
+        detalles_tocados = len(detalles)
+        detalles_actualizados = 0
+
+        for d in detalles:
+            precio = Decimal(str(d.producto.precio or 0))
+            cantidad = Decimal(str(d.cantidad or 0))
+            nuevo_subtotal = cantidad * precio
+            anterior_subtotal = Decimal(str(d.subtotal or 0))
+
+            if nuevo_subtotal != anterior_subtotal:
+                d.subtotal = nuevo_subtotal
+                detalles_actualizados += 1
+                db.session.add(d)
+
+        db.session.flush()  # asegurar lectura actualizada en v.detalles
+
+        # 2) Recalcular totales por venta
+        ventas = Venta.query.all()
+        ventas_tocadas = len(ventas)
+        ventas_actualizadas = 0
+
+        for v in ventas:
+            total_nuevo = sum(Decimal(str(det.subtotal or 0)) for det in v.detalles)
+            total_anterior = Decimal(str(v.total or 0))
+            if total_nuevo != total_anterior:
+                v.total = total_nuevo
+                ventas_actualizadas += 1
+                db.session.add(v)
+
+        # 3) Auditoría
+        usuario_id = session.get("user_id")
+        usuario_nombre = session.get("username") or session.get("email") or "desconocido"
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+
+        audit = Auditoria(
+            usuario_id=usuario_id,
+            usuario_nombre=usuario_nombre,
+            accion="recalcular_totales",
+            detalles=(
+                f"Detalles tocados={detalles_tocados}, act={detalles_actualizados}; "
+                f"Ventas tocadas={ventas_tocadas}, act={ventas_actualizadas}"
+            ),
+            detalles_json={
+                "detalles_tocados": detalles_tocados,
+                "detalles_actualizados": detalles_actualizados,
+                "ventas_tocadas": ventas_tocadas,
+                "ventas_actualizadas": ventas_actualizadas,
+            },
+            ip=ip,
+        )
+        db.session.add(audit)
+        db.session.commit()
+
+        flash(
+            f"✅ Recalculo completado. "
+            f"Detalles tocados: {detalles_tocados}, actualizados: {detalles_actualizados}. "
+            f"Ventas tocadas: {ventas_tocadas}, actualizadas: {ventas_actualizadas}.",
+            "success",
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"⚠️ No se pudo recalcular: {str(e)}", "danger")
+
+    return redirect(url_for("dashboard"))
+
+# =====================================================
+# ADMIN: AUDITORÍA (vista y CSV)
+# =====================================================
+
+@reportes_bp.route("/admin/auditoria")
+@require_roles("administrador")
+def ver_auditoria():
+    logs = Auditoria.query.order_by(Auditoria.fecha_hora.desc()).limit(200).all()
+    return render_template("auditoria.html", logs=logs)
+
+@reportes_bp.route("/admin/auditoria.csv")
+@require_roles("administrador")
+def descargar_auditoria_csv():
+    logs = Auditoria.query.order_by(Auditoria.fecha_hora.desc()).all()
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["fecha_hora","usuario_id","usuario_nombre","accion","detalles","detalles_json","ip"])
+    for l in logs:
+        writer.writerow([
+            l.fecha_hora,
+            l.usuario_id or "",
+            l.usuario_nombre or "",
+            l.accion,
+            (l.detalles or "").replace("\n", " ").strip(),
+            json.dumps(l.detalles_json, ensure_ascii=False) if l.detalles_json else "",
+            l.ip or "",
+        ])
+
+    resp = make_response(output.getvalue())
+    resp.headers["Content-Disposition"] = "attachment; filename=auditoria.csv"
+    resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+    return resp

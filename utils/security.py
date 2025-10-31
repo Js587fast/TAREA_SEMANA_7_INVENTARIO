@@ -1,14 +1,7 @@
-# utils/security.py
 from functools import wraps
 from flask import session, redirect, url_for, flash
 
 def require_roles(*roles_permitidos):
-    """
-    Decorador para restringir una vista a uno o varios roles.
-    Uso:
-      @require_roles('administrador')
-      @require_roles('administrador', 'auditor')
-    """
     roles_permitidos = {r.lower() for r in roles_permitidos}
 
     def wrapper(f):

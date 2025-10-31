@@ -5,7 +5,7 @@ from utils.security import require_roles  # <- Se importa nuevo decorador
 producto_bp = Blueprint('producto', __name__, url_prefix='/producto')
 
 
-# ---- Listar productos (solo admin, ya protegido globalmente, pero se refuerza) ----
+# ---- Listar productos (solo administrador) ----
 @producto_bp.route("/")
 @require_roles('administrador')
 def index():
@@ -13,7 +13,7 @@ def index():
     return render_template("productos.html", productos=productos)
 
 
-# ---- Crear producto (solo admin) ----
+# ---- Crear producto (solo administrador) ----
 @producto_bp.route("/nuevo", methods=["GET", "POST"])
 @require_roles('administrador')
 def nuevo_producto():
@@ -38,7 +38,7 @@ def nuevo_producto():
     return render_template("nuevo_producto.html", proveedores=proveedores)
 
 
-# ---- Editar producto (solo admin) ----
+# ---- Editar producto (solo administrador) ----
 @producto_bp.route("/editar/<int:id>", methods=["GET", "POST"])
 @require_roles('administrador')
 def editar_producto(id):
@@ -57,7 +57,7 @@ def editar_producto(id):
     return render_template("editar_producto.html", producto=pr, proveedores=proveedores)
 
 
-# ---- Eliminar producto (solo admin, uso de POST) ----
+# ---- Eliminar producto (solo administrador, uso de POST) ----
 @producto_bp.route("/eliminar/<int:id>", methods=["POST"])
 @require_roles('administrador')
 def eliminar_producto(id):

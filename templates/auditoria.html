@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Auditoría - Inventario PYMES{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="mb-0">📜 Auditoría del sistema</h1>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+      ← Volver
+    </a>
+    <a href="{{ url_for('reportes.descargar_auditoria_csv') }}" class="btn btn-outline-success">
+      ⬇️ Exportar CSV
+    </a>
+  </div>
+</div>
+
+<!-- Filtro rápido en cliente -->
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-md-auto">
+        <label for="filtro" class="col-form-label fw-semibold">Buscar:</label>
+      </div>
+      <div class="col-12 col-md-6">
+        <input id="filtro" type="text" class="form-control" placeholder="Filtra por usuario, acción o detalles...">
+      </div>
+      <div class="col-12 col-md-auto">
+        <button id="limpiar" class="btn btn-outline-secondary">Limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table id="tabla-auditoria" class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th style="white-space:nowrap;">#</th>
+        <th style="white-space:nowrap;">Fecha/Hora</th>
+        <th>Usuario</th>
+        <th>Acción</th>
+        <th>Detalles</th>
+        <th style="white-space:nowrap;">IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in logs %}
+      <tr>
+        <td>{{ l.id_auditoria }}</td>
+        <td>{{ l.fecha_hora }}</td>
+        <td>
+          {{ l.usuario_nombre or "—" }}
+          <small class="text-muted">({{ l.usuario_id or "—" }})</small>
+        </td>
+        <td>
+          <span class="badge bg-primary">{{ l.accion }}</span>
+        </td>
+        <td style="max-width: 560px;">
+          <div class="small text-wrap" style="white-space: normal;">
+            {{ l.detalles or "—" }}
+          </div>
+          {% if l.detalles_json %}
+          <details class="mt-1">
+            <summary class="small text-muted" style="cursor:pointer;">ver JSON</summary>
+            <pre class="border rounded p-2 bg-light small mb-0" style="white-space: pre-wrap; word-break: break-word;">{{ l.detalles_json | tojson(indent=2) }}</pre>
+          </details>
+          {% endif %}
+        </td>
+        <td>{{ l.ip or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  // Filtro rápido de filas por texto
+  (function () {
+    const input = document.getElementById('filtro');
+    const btnLimpiar = document.getElementById('limpiar');
+    const tbody = document.querySelector('#tabla-auditoria tbody');
+
+    function normalizar(str) {
+      return (str || '').toString().toLowerCase();
+    }
+
+    function filtrar() {
+      const q = normalizar(input.value);
+      const filas = tbody.querySelectorAll('tr');
+      filas.forEach(tr => {
+        const t = normalizar(tr.innerText);
+        tr.style.display = t.includes(q) ? '' : 'none';
+      });
+    }
+
+    input.addEventListener('input', filtrar);
+    btnLimpiar.addEventListener('click', function(){
+      input.value = '';
+      filtrar();
+      input.focus();
+    });
+  })();
+</script>
+{% endblock %}

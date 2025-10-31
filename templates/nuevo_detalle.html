@@ -1,19 +1,14 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Registrar Nuevo Detalle</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+{% extends "base.html" %}
+{% block title %}Registrar Nuevo Detalle - Inventario PYMES{% endblock %}
+{% block content %}
 
 <div class="container mt-5">
   <div class="card shadow-sm">
     <div class="card-header bg-primary text-white text-center">
       <h3 class="mb-0">Registrar Nuevo Detalle</h3>
     </div>
+
     <div class="card-body">
-      <!-- Mensajes flash -->
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
@@ -25,8 +20,8 @@
         {% endif %}
       {% endwith %}
 
-      <form method="POST" class="needs-validation" novalidate>
-        <!-- Tienda -->
+      <form method="POST" novalidate>
+        <!-- TIENDA -->
         <div class="mb-3">
           <label for="id_tienda" class="form-label">Tienda:</label>
           <select id="id_tienda" name="id_tienda" class="form-select" required>
@@ -35,10 +30,9 @@
               <option value="{{ t.id_tienda }}">{{ t.nombre }}</option>
             {% endfor %}
           </select>
-          <div class="invalid-feedback">Selecciona una tienda válida.</div>
         </div>
 
-        <!-- Cliente -->
+        <!-- CLIENTE -->
         <div class="mb-3">
           <label for="id_cliente" class="form-label">Cliente:</label>
           <select id="id_cliente" name="id_cliente" class="form-select" required>
@@ -47,45 +41,48 @@
               <option value="{{ c.id_cliente }}">{{ c.nombre }}</option>
             {% endfor %}
           </select>
-          <div class="invalid-feedback">Selecciona un cliente válido.</div>
         </div>
 
-        <!-- Detalles -->
-        <div class="mb-3">
-          <label class="form-label">Líneas de Detalle:</label>
-          <div id="detalles" class="border p-3 rounded bg-light">
-            <div class="row g-2 mb-2 detalle-item">
-              <div class="col-md-5">
-                <select name="detalles[0][id_producto]" class="form-select producto-select" required>
-                  {% for pr in productos %}
-                    <option value="{{ pr.id_producto }}" data-precio="{{ pr.precio }}">
-                      {{ pr.nombre }} ({{ pr.precio }} CLP)
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-2">
-                <input type="number" name="detalles[0][cantidad]" class="form-control cantidad-input" value="1" min="1" required>
-              </div>
-              <div class="col-md-3">
-                <input type="number" step="0.01" name="detalles[0][precio_unitario]" class="form-control precio-input" required>
-              </div>
-              <div class="col-md-2 d-flex align-items-center">
-                <button type="button" class="btn btn-danger btn-sm btnEliminar">🗑️</button>
-              </div>
+        <!-- DETALLES -->
+        <h5 class="text-secondary mb-3">Detalles del Pedido</h5>
+
+        <div id="detalles-container">
+          <div class="row g-2 mb-2 detalle-item align-items-center">
+            <div class="col-md-5">
+              <select name="detalles[0][id_producto]" class="form-select producto-select" required>
+                <option value="">--Selecciona un producto--</option>
+                {% for pr in productos %}
+                <option value="{{ pr.id_producto }}" data-precio="{{ pr.precio }}">
+                  {{ pr.nombre }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <input type="number" name="detalles[0][cantidad]" min="1" class="form-control cantidad-input" value="1" required>
+            </div>
+            <div class="col-md-2 text-end">
+              <span class="precio-unit text-muted">$0 CLP</span>
+            </div>
+            <div class="col-md-2 text-end">
+              <span class="subtotal text-muted">$0 CLP</span>
+            </div>
+            <div class="col-md-1 text-center">
+              <button type="button" class="btn btn-outline-danger btn-sm btnQuitar"><i class="bi bi-x-circle"></i></button>
             </div>
           </div>
-          <button type="button" id="btnAgregar" class="btn btn-secondary btn-sm mt-2">
-            + Agregar otra línea
+        </div>
+
+        <div class="mb-3">
+          <button type="button" id="btnAgregar" class="btn btn-secondary btn-sm">
+            <i class="bi bi-plus-circle"></i> Agregar Producto
           </button>
         </div>
 
-        <!-- Total -->
-        <div class="mb-3 text-end">
-          <strong>Total Detalle:</strong> <span id="totalVenta">0 CLP</span>
+        <div class="text-end fw-bold mb-3">
+          Total: <span id="totalLabel" class="text-primary">$0 CLP</span>
         </div>
 
-        <!-- Botones -->
         <div class="d-flex justify-content-between">
           <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
           <button type="submit" class="btn btn-success">Guardar Detalle</button>
@@ -95,114 +92,80 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
-(() => {
-  'use strict';
-  const forms = document.querySelectorAll('.needs-validation');
-  Array.from(forms).forEach(form => {
-    form.addEventListener('submit', event => {
-      if (!form.checkValidity()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      form.classList.add('was-validated');
-    }, false);
-  });
-})();
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("detalles-container");
+  const btnAdd = document.getElementById("btnAgregar");
+  const totalLabel = document.getElementById("totalLabel");
 
-let contador = 1;
-const detallesDiv = document.getElementById('detalles');
-const totalVentaSpan = document.getElementById('totalVenta');
-const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' });
+  const precios = {
+    {% for p in productos %}
+      {{ p.id_producto }}: {{ p.precio|int }},
+    {% endfor %}
+  };
 
-// Reindexa todas las líneas de detalle
-function reindexarLineas() {
-  const lineas = detallesDiv.querySelectorAll('.detalle-item');
-  lineas.forEach((item, index) => {
-    item.querySelectorAll('select, input').forEach(input => {
-      const name = input.getAttribute('name');
-      if (name) {
-        const nuevo = name.replace(/detalles\[\d+\]/, `detalles[${index}]`);
-        input.setAttribute('name', nuevo);
-      }
+  const fmt = n => "$" + (parseInt(n || 0)).toLocaleString("es-CL") + " CLP";
+
+  function actualizarFila(row) {
+    const sel = row.querySelector(".producto-select");
+    const inp = row.querySelector(".cantidad-input");
+    const precioUnit = row.querySelector(".precio-unit");
+    const sub = row.querySelector(".subtotal");
+    const id = parseInt(sel.value || 0);
+    const cantidad = parseInt(inp.value || 0);
+    const precio = id ? precios[id] || 0 : 0;
+    const subtotal = cantidad * precio;
+
+    precioUnit.textContent = fmt(precio);
+    sub.textContent = fmt(subtotal);
+    actualizarTotal();
+  }
+
+  function actualizarTotal() {
+    let total = 0;
+    container.querySelectorAll(".detalle-item").forEach(row => {
+      const sel = row.querySelector(".producto-select");
+      const inp = row.querySelector(".cantidad-input");
+      const id = parseInt(sel.value || 0);
+      const cantidad = parseInt(inp.value || 0);
+      const precio = id ? precios[id] || 0 : 0;
+      total += cantidad * precio;
     });
+    totalLabel.textContent = fmt(total);
+  }
+
+  function agregarFila() {
+    const index = container.querySelectorAll(".detalle-item").length;
+    const first = container.firstElementChild.cloneNode(true);
+
+    first.querySelectorAll("select, input").forEach(el => {
+      el.name = el.name.replace(/\d+/, index);
+      if (el.classList.contains("cantidad-input")) el.value = 1;
+      if (el.classList.contains("producto-select")) el.selectedIndex = 0;
+    });
+
+    first.querySelector(".precio-unit").textContent = "$0 CLP";
+    first.querySelector(".subtotal").textContent = "$0 CLP";
+
+    first.querySelector(".producto-select").addEventListener("change", () => actualizarFila(first));
+    first.querySelector(".cantidad-input").addEventListener("input", () => actualizarFila(first));
+    first.querySelector(".btnQuitar").addEventListener("click", () => { first.remove(); actualizarTotal(); });
+
+    container.appendChild(first);
+  }
+
+  // inicializar eventos
+  container.querySelectorAll(".detalle-item").forEach(row => {
+    const sel = row.querySelector(".producto-select");
+    const inp = row.querySelector(".cantidad-input");
+    const btn = row.querySelector(".btnQuitar");
+    sel.addEventListener("change", () => actualizarFila(row));
+    inp.addEventListener("input", () => actualizarFila(row));
+    btn.addEventListener("click", () => { row.remove(); actualizarTotal(); });
+    actualizarFila(row);
   });
-  contador = lineas.length;
-}
 
-// Recalcular total
-function recalcularTotal() {
-  let total = 0;
-  document.querySelectorAll('.detalle-item').forEach(item => {
-    const cantidad = parseFloat(item.querySelector('.cantidad-input').value) || 0;
-    const precio = parseFloat(item.querySelector('.precio-input').value) || 0;
-    total += cantidad * precio;
-  });
-  totalVentaSpan.textContent = formatoCLP.format(total);
-}
-
-// Inicializar eventos para cada línea
-function inicializarEventos(scope) {
-  const productoSelect = scope.querySelector('.producto-select');
-  const cantidadInput = scope.querySelector('.cantidad-input');
-  const precioInput = scope.querySelector('.precio-input');
-  const btnEliminar = scope.querySelector('.btnEliminar');
-
-  productoSelect.addEventListener('change', () => {
-    const precio = productoSelect.selectedOptions[0].dataset.precio || 0;
-    precioInput.value = parseFloat(precio).toFixed(2);
-    recalcularTotal();
-  });
-
-  cantidadInput.addEventListener('input', recalcularTotal);
-  precioInput.addEventListener('input', recalcularTotal);
-
-  const precio = productoSelect.selectedOptions[0].dataset.precio || 0;
-  precioInput.value = parseFloat(precio).toFixed(2);
-
-  btnEliminar.addEventListener('click', () => {
-    scope.remove();
-    reindexarLineas();
-    recalcularTotal();
-  });
-}
-
-// Botón para agregar nueva línea
-document.getElementById('btnAgregar').addEventListener('click', () => {
-  const div = document.createElement('div');
-  div.classList.add('row', 'g-2', 'mb-2', 'detalle-item');
-  div.innerHTML = `
-    <div class="col-md-5">
-      <select name="detalles[${contador}][id_producto]" class="form-select producto-select" required>
-        {% for pr in productos %}
-          <option value="{{ pr.id_producto }}" data-precio="{{ pr.precio }}">
-            {{ pr.nombre }} ({{ pr.precio }} CLP)
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2">
-      <input type="number" name="detalles[${contador}][cantidad]" class="form-control cantidad-input" value="1" min="1" required>
-    </div>
-    <div class="col-md-3">
-      <input type="number" step="0.01" name="detalles[${contador}][precio_unitario]" class="form-control precio-input" required>
-    </div>
-    <div class="col-md-2 d-flex align-items-center">
-      <button type="button" class="btn btn-danger btn-sm btnEliminar">🗑️</button>
-    </div>
-  `;
-  detallesDiv.appendChild(div);
-  inicializarEventos(div);
-  contador++;
-  recalcularTotal();
+  btnAdd.addEventListener("click", agregarFila);
 });
-
-// Inicializar eventos para la primera línea
-document.querySelectorAll('.detalle-item').forEach(inicializarEventos);
-recalcularTotal();
 </script>
-</body>
-</html>
-
+{% endblock %}

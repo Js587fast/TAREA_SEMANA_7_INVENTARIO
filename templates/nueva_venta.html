@@ -1,53 +1,57 @@
 {% extends "base.html" %}
 {% block content %}
+
 <div class="container mt-4">
   <div class="card shadow">
     <div class="card-header bg-primary text-white text-center">
       <h4>Registrar Nueva Venta</h4>
     </div>
+
     <div class="card-body">
-      <form method="POST" action="{{ url_for('venta.nueva_venta') }}">
+      <form method="POST" action="{{ url_for('venta.nueva_venta') }}" class="needs-validation" novalidate>
+
         <!-- CLIENTE -->
         <div class="mb-3">
           <label for="id_cliente" class="form-label">Cliente:</label>
           <select name="id_cliente" id="id_cliente" class="form-select" required>
-            <option value="">--Seleccionar--</option>
+            <option value="">-- Seleccionar Cliente --</option>
             {% for c in clientes %}
-            <option value="{{ c.id_cliente }}">{{ c.nombre }}</option>
+              <option value="{{ c.id_cliente }}">{{ c.nombre }}</option>
             {% endfor %}
           </select>
+          <div class="invalid-feedback">Selecciona un cliente válido.</div>
         </div>
 
         <!-- FECHA -->
         <div class="mb-3">
-          <label for="fecha" class="form-label">Fecha:</label>
-          <input type="date" name="fecha" id="fecha" class="form-control">
+          <label for="fecha" class="form-label">Fecha de Venta:</label>
+          <input type="date" name="fecha" id="fecha" class="form-control" value="{{ date.today().isoformat() }}">
         </div>
 
         <!-- TIENDA -->
         <div class="mb-3">
           <label for="id_tienda" class="form-label">Tienda:</label>
           <select name="id_tienda" id="id_tienda" class="form-select" required>
-            <option value="">--Seleccionar--</option>
+            <option value="">-- Seleccionar Tienda --</option>
             {% for t in tiendas %}
-            <option value="{{ t.id_tienda }}">{{ t.nombre }}</option>
+              <option value="{{ t.id_tienda }}">{{ t.nombre }}</option>
             {% endfor %}
           </select>
+          <div class="invalid-feedback">Selecciona una tienda válida.</div>
         </div>
 
         <!-- DETALLES DE PRODUCTOS -->
-        <h5 class="text-secondary mb-3">Detalles de Productos</h5>
+        <h5 class="text-secondary mt-4 mb-3">Detalles de Productos</h5>
+
         <div id="productos-container">
-          <div class="row mb-2 detalle-producto">
+          <div class="row g-2 mb-2 detalle-item">
             <div class="col-md-5">
               <select name="detalles[0][id_producto]" class="form-select producto-select" required>
-                <option value="">--Selecciona un producto--</option>
+                <option value="">-- Selecciona un producto --</option>
                 {% for p in productos %}
-                <option value="{{ p.id_producto }}"
-                        data-precio="{{ p.precio }}"
-                        data-stock="{{ p.stock }}">
-                  {{ p.nombre }}
-                </option>
+                  <option value="{{ p.id_producto }}" data-precio="{{ p.precio }}" data-stock="{{ p.stock }}">
+                    {{ p.nombre }} (Stock: {{ p.stock }})
+                  </option>
                 {% endfor %}
               </select>
             </div>
@@ -57,17 +61,21 @@
             <div class="col-md-3">
               <input type="number" step="0.01" min="0" name="detalles[0][precio_unitario]" class="form-control precio-input" placeholder="Precio" required>
             </div>
-            <div class="col-md-2">
-              <input type="text" class="form-control stock-display" placeholder="Stock: -" disabled>
+            <div class="col-md-2 d-flex align-items-center">
+              <button type="button" class="btn btn-danger btn-sm btnEliminar">🗑️</button>
             </div>
           </div>
         </div>
 
-        <div class="mb-3">
-          <button type="button" class="btn btn-secondary" id="add-producto">Agregar Otro Producto</button>
+        <button type="button" class="btn btn-secondary btn-sm mt-2" id="add-producto">+ Agregar Otro Producto</button>
+
+        <!-- TOTAL -->
+        <div class="text-end mt-3">
+          <h5>Total: <span id="totalVenta" class="text-success">{{ 0|clp }}</span></h5>
         </div>
 
-        <div class="d-flex justify-content-between">
+        <!-- BOTONES -->
+        <div class="d-flex justify-content-between mt-4">
           <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
           <button type="submit" class="btn btn-success">Guardar Venta</button>
         </div>
@@ -76,46 +84,74 @@
   </div>
 </div>
 
-<!-- JavaScript -->
+<!-- SCRIPT -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Función para enlazar comportamiento a selects de producto
-  function attachListeners(row) {
+document.addEventListener('DOMContentLoaded', () => {
+  const formatoCLP = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 });
+  const contenedor = document.getElementById('productos-container');
+  const totalVenta = document.getElementById('totalVenta');
+  const addBtn = document.getElementById('add-producto');
+
+  // Recalcular total general
+  function recalcularTotal() {
+    let total = 0;
+    document.querySelectorAll('.detalle-item').forEach(row => {
+      const cantidad = parseFloat(row.querySelector('.cantidad-input').value) || 0;
+      const precio = parseFloat(row.querySelector('.precio-input').value) || 0;
+      total += cantidad * precio;
+    });
+    totalVenta.textContent = formatoCLP.format(total);
+  }
+
+  // Asignar eventos a cada fila
+  function asignarEventos(row) {
     const select = row.querySelector('.producto-select');
-    const precioInput = row.querySelector('.precio-input');
-    const stockDisplay = row.querySelector('.stock-display');
-    select.addEventListener('change', function() {
-      const selected = this.options[this.selectedIndex];
-      const precio = selected.getAttribute('data-precio');
-      const stock = selected.getAttribute('data-stock');
-      if (precio) precioInput.value = precio;
-      if (stock) stockDisplay.value = "Stock: " + stock;
+    const cantidad = row.querySelector('.cantidad-input');
+    const precio = row.querySelector('.precio-input');
+    const eliminar = row.querySelector('.btnEliminar');
+
+    select.addEventListener('change', () => {
+      const selected = select.selectedOptions[0];
+      const precioProducto = parseFloat(selected.dataset.precio || 0);
+      precio.value = precioProducto.toFixed(2);
+      recalcularTotal();
+    });
+
+    cantidad.addEventListener('input', recalcularTotal);
+    precio.addEventListener('input', recalcularTotal);
+    eliminar.addEventListener('click', () => {
+      row.remove();
+      actualizarNombres();
+      recalcularTotal();
     });
   }
 
-  // Atachar al primer row
-  document.querySelectorAll('.detalle-producto').forEach(attachListeners);
-
-  // Botón que sirve para agregar otro producto
-  document.getElementById('add-producto').addEventListener('click', function() {
-    const container = document.getElementById('productos-container');
-    const index = container.querySelectorAll('.detalle-producto').length;
-    const newRow = container.firstElementChild.cloneNode(true);
-
-    // limpiar valores
-    newRow.querySelectorAll('input').forEach(input => input.value = '');
-    newRow.querySelector('select').selectedIndex = 0;
-
-    // Se debe actualizar nombres de inputs para que no se repitan índices
-    newRow.querySelectorAll('select, input').forEach(el => {
-      if (el.name.includes('detalles')) {
-        el.name = el.name.replace(/\d+/, index);
-      }
+  // Actualiza índices de nombres dinámicos
+  function actualizarNombres() {
+    document.querySelectorAll('.detalle-item').forEach((row, i) => {
+      row.querySelectorAll('select, input').forEach(el => {
+        const name = el.getAttribute('name');
+        if (name && name.includes('detalles[')) {
+          el.setAttribute('name', name.replace(/detalles\[\d+\]/, `detalles[${i}]`));
+        }
+      });
     });
+  }
 
-    container.appendChild(newRow);
-    attachListeners(newRow);
+  // Botón agregar
+  addBtn.addEventListener('click', () => {
+    const nuevaFila = contenedor.firstElementChild.cloneNode(true);
+    nuevaFila.querySelectorAll('input').forEach(i => i.value = '');
+    nuevaFila.querySelector('select').selectedIndex = 0;
+    contenedor.appendChild(nuevaFila);
+    asignarEventos(nuevaFila);
+    actualizarNombres();
   });
+
+  // Inicializar primera fila
+  document.querySelectorAll('.detalle-item').forEach(asignarEventos);
+  recalcularTotal();
 });
 </script>
+
 {% endblock %}

@@ -5,7 +5,7 @@ from sqlalchemy import or_
 from models import Usuario
 from extensions import db
 
-# Todas las rutas bajo /auth
+# Todas las rutas se encuentran bajo /auth
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
